@@ -2,6 +2,8 @@
 
 Shared household dashboard for a dedicated Samsung tablet (Kasparas + Izolda). Runs as an installable PWA, works offline, no backend server, no login.
 
+**Live:** https://kazass.github.io/home-dashboard/
+
 ## Decisions locked in
 
 - **Hosting:** static site, deployed to GitHub Pages, installed to home screen as a PWA (offline via service worker). Deploy step needs explicit go-ahead + repo details before pushing anything public.
