@@ -74,11 +74,19 @@ html, body {
 }
 
 .nav-utility-btn {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+#backup-nav-btn {
   margin-top: 12px;
   border-top: 1px solid var(--border);
   padding-top: 16px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+}
+
+#version-nav-btn {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .nav-btn.active {
@@ -128,13 +136,17 @@ html, body {
     font-size: 0.9rem;
   }
 
-  .nav-utility-btn {
+  #backup-nav-btn {
     margin-top: 0;
     margin-left: 12px;
     border-top: none;
     border-left: 1px solid var(--border);
     padding-top: 12px;
     padding-left: 16px;
+  }
+
+  #version-nav-btn {
+    margin-left: 8px;
   }
 }
 
@@ -940,7 +952,7 @@ input[type="checkbox"] {
 
 .decide-menu {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -997,4 +1009,18 @@ input[type="checkbox"] {
   text-align: center;
   font-size: 1.3rem;
   padding: 30px 10px;
+}
+
+/* Changelog */
+.changelog-entry {
+  margin-bottom: 18px;
+}
+
+.changelog-entry h4 {
+  margin: 0 0 6px;
+}
+
+.changelog-entry ul {
+  margin: 0;
+  padding-left: 20px;
 }

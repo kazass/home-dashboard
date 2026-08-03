@@ -5,27 +5,30 @@ async function pickRandomFrom(store, filterFn) {
   return filtered[Math.floor(Math.random() * filtered.length)];
 }
 
+// Home/Work tasks and Maintenance chores are both "things still left to do
+// around the house", so they're pooled into one pick rather than two modes.
+async function fetchOpenHomeChores() {
+  const tasks = (await HD_DB.dbGetAll('homeWork'))
+    .filter((t) => t.status !== 'done')
+    .map((t) => ({ title: t.title, badge: t.when || '' }));
+  const chores = (await HD_DB.dbGetAll('scheduling'))
+    .filter((s) => s.category === 'chore')
+    .map((c) => ({ title: c.title, badge: '' }));
+  return [...tasks, ...chores];
+}
+
 const DECIDE_PICKER_CONFIG = {
-  task: {
-    title: 'Random task',
-    store: 'homeWork',
-    filter: (t) => t.status !== 'done',
-    empty: 'No open home tasks — add some in the Home/Work tab.',
-    render: (t) => `<strong>${HD_CAL.escapeHtml(t.title)}</strong>${t.when ? ` <span class="badge">${HD_CAL.escapeHtml(t.when)}</span>` : ''}`,
+  chore: {
+    title: 'Random home chore',
+    fetchItems: fetchOpenHomeChores,
+    empty: 'No open home tasks or chores — add some in the Home/Work or Maintenance tab.',
+    render: (item) => `<strong>${HD_CAL.escapeHtml(item.title)}</strong>${item.badge ? ` <span class="badge">${HD_CAL.escapeHtml(item.badge)}</span>` : ''}`,
   },
   activity: {
     title: 'Random activity',
-    store: 'ideas',
-    filter: (i) => i.status !== 'done',
+    fetchItems: async () => (await HD_DB.dbGetAll('ideas')).filter((i) => i.status !== 'done').map((i) => ({ title: i.title, badge: '' })),
     empty: 'No open ideas — add some in the Ideas tab.',
-    render: (i) => `<strong>${HD_CAL.escapeHtml(i.title)}</strong>`,
-  },
-  chore: {
-    title: 'Random cleaning task',
-    store: 'scheduling',
-    filter: (s) => s.category === 'chore',
-    empty: 'No chores set up yet — add some in the Maintenance tab.',
-    render: (c) => `<strong>${HD_CAL.escapeHtml(c.title)}</strong>`,
+    render: (item) => `<strong>${HD_CAL.escapeHtml(item.title)}</strong>`,
   },
 };
 
@@ -50,9 +53,8 @@ function openDecideModal() {
         </div>
         <div class="modal-body decide-menu">
           <button type="button" data-mode="coin">🪙 Coin flip</button>
-          <button type="button" data-mode="task">✅ Random task</button>
+          <button type="button" data-mode="chore">🧹 Random home chore</button>
           <button type="button" data-mode="activity">🎯 Random activity</button>
-          <button type="button" data-mode="chore">🧹 Random cleaning task</button>
         </div>
       </div>`;
     closeBtnHandler();
@@ -105,7 +107,8 @@ function openDecideModal() {
     async function pick() {
       const resultEl = overlay.querySelector('#picker-result');
       if (!resultEl) return;
-      const item = await pickRandomFrom(config.store, config.filter);
+      const items = await config.fetchItems();
+      const item = items.length ? items[Math.floor(Math.random() * items.length)] : null;
       resultEl.innerHTML = item ? config.render(item) : `<span class="text-muted">${config.empty}</span>`;
     }
 

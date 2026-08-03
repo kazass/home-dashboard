@@ -12,14 +12,21 @@ const TABS = [
 
 function renderNav() {
   const nav = document.getElementById('nav');
+  const version = window.HD_CHANGELOG ? window.HD_CHANGELOG.APP_VERSION : '';
   nav.innerHTML = TABS.map(t =>
     `<button class="nav-btn" data-tab="${t.id}">${t.label}</button>`
-  ).join('') + '<button class="nav-btn nav-utility-btn" id="backup-nav-btn">Backup</button>';
+  ).join('')
+    + '<button class="nav-btn nav-utility-btn" id="backup-nav-btn">Backup</button>'
+    + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`;
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
     if (!btn) return;
     if (btn.id === 'backup-nav-btn') {
       if (window.HD_BACKUP) window.HD_BACKUP.openBackupModal();
+      return;
+    }
+    if (btn.id === 'version-nav-btn') {
+      if (window.HD_CHANGELOG) window.HD_CHANGELOG.openChangelogModal();
       return;
     }
     location.hash = btn.dataset.tab;
