@@ -1,0 +1,106 @@
+async function renderMaintenanceTab(main) {
+  main.innerHTML = `
+    <div class="tab-header"><h2>Maintenance</h2><p class="text-muted">Recurring home chores. Full recurrence editing (e.g. switching to an unusual pattern) lives in the Scheduling tab.</p></div>
+    <form id="chore-form" class="inline-form">
+      <input name="title" placeholder="Chore (e.g. Wash towels)" required>
+      <input type="number" name="intervalCount" min="1" value="1" style="width:70px">
+      <select name="intervalUnit">
+        <option value="days">Days</option>
+        <option value="weeks" selected>Weeks</option>
+        <option value="months">Months</option>
+      </select>
+      <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <textarea name="notes" placeholder="Notes (optional)"></textarea>
+      <button type="submit">Add chore</button>
+    </form>
+    <div id="chore-list"></div>`;
+
+  const listEl = document.getElementById('chore-list');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function dueBadge(due) {
+    const diffDays = Math.round((due - today) / 86400000);
+    if (diffDays < 0) return `<span class="task-due overdue">Overdue by ${-diffDays}d</span>`;
+    if (diffDays === 0) return '<span class="task-due due-today">Due today</span>';
+    return `<span class="task-due">Due in ${diffDays}d</span>`;
+  }
+
+  async function refresh() {
+    const all = await HD_DB.dbGetAll('scheduling');
+    const chores = all.filter((s) => s.category === 'chore');
+    chores.sort((a, b) => HD_SCHEDULING.choreNextDue(a) - HD_SCHEDULING.choreNextDue(b));
+
+    listEl.innerHTML = chores.length
+      ? chores.map((c) => {
+        const due = HD_SCHEDULING.choreNextDue(c);
+        return `
+          <div class="task-row" data-id="${c.id}">
+            <div class="task-row-main">
+              <span class="task-title">${HD_CAL.escapeHtml(c.title)}</span>
+              <span class="badge">${c.assignedTo || 'Both'}</span>
+              <span class="text-muted">${HD_SCHEDULING.describeRecurrence(c)}</span>
+              ${dueBadge(due)}
+            </div>
+            <div class="text-muted">Completed ${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''}</div>
+            ${c.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(c.notes)}</div>` : ''}
+            <div class="task-actions">
+              <button type="button" data-done="${c.id}">Mark done</button>
+              <button type="button" data-delete="${c.id}">Delete</button>
+            </div>
+          </div>`;
+      }).join('')
+      : '<p class="text-muted">No chores yet.</p>';
+
+    listEl.querySelectorAll('[data-done]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const chore = chores.find((c) => c.id === btn.dataset.done);
+        const doneAt = new Date();
+        doneAt.setHours(0, 0, 0, 0);
+        chore.lastDoneAt = doneAt.getTime();
+        chore.completedCount = (chore.completedCount || 0) + 1;
+        await HD_DB.dbPut('scheduling', chore);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this chore?')) return;
+        await HD_DB.dbDelete('scheduling', btn.dataset.delete);
+        refresh();
+      });
+    });
+  }
+
+  document.getElementById('chore-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const title = fd.get('title').trim();
+    if (!title) return;
+    const anchorToday = new Date();
+    anchorToday.setHours(0, 0, 0, 0);
+    await HD_DB.dbPut('scheduling', {
+      id: crypto.randomUUID(),
+      title,
+      category: 'chore',
+      assignedTo: fd.get('assignedTo'),
+      recurrenceKind: 'interval',
+      intervalCount: Number(fd.get('intervalCount')) || 1,
+      intervalUnit: fd.get('intervalUnit'),
+      nth: 1,
+      weekday: 0,
+      anchorDate: HD_CAL.ymd(anchorToday),
+      notes: fd.get('notes').trim(),
+      lastDoneAt: null,
+      completedCount: 0,
+      createdAt: Date.now(),
+    });
+    ev.target.reset();
+    refresh();
+  });
+
+  refresh();
+}
+
+window.HD_MAINTENANCE = { renderMaintenanceTab };
