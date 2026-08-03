@@ -237,6 +237,9 @@ async function renderDashboardTab(main) {
     <div class="dashboard-grid">
       <section class="dashboard-calendar card" id="dash-calendar"></section>
       <aside class="dashboard-side">
+        <section class="card decide-card">
+          <button type="button" id="decide-btn" class="decide-launch-btn">🎲 Help me decide</button>
+        </section>
         <section class="card" id="dash-weather-card">
           <h4>Weather</h4>
           <div id="dash-weather-body"></div>
@@ -264,6 +267,10 @@ async function renderDashboardTab(main) {
   renderAgenda(agendaEl);
   renderMiniNotes(document.getElementById('dash-notes'));
   renderMiniShopping(document.getElementById('dash-shopping'));
+
+  document.getElementById('decide-btn').addEventListener('click', () => {
+    if (window.HD_DECIDE) HD_DECIDE.openDecideModal();
+  });
 }
 
 window.HD_DASHBOARD = { renderDashboardTab };
