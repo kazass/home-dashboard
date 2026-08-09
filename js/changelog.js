@@ -1,7 +1,14 @@
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.3.0',
+    date: '2026-08-09',
+    notes: [
+      'Added an idle ambient screensaver: after 3 minutes of no activity, a full-screen clock, date, and weather appear; any tap returns to the app.',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-08-04',
