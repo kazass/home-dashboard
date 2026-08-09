@@ -80,6 +80,7 @@ window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
   renderNav();
   route();
+  if (window.HD_SCREENSAVER) window.HD_SCREENSAVER.initScreensaver();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(console.error);
   }

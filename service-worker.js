@@ -1,4 +1,4 @@
-const CACHE_NAME = 'home-dashboard-v11';
+const CACHE_NAME = 'home-dashboard-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/backup.js',
   './js/decide.js',
   './js/changelog.js',
+  './js/screensaver.js',
   './manifest.json',
   './icons/icon.svg',
 ];

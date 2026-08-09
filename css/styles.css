@@ -1024,3 +1024,48 @@ input[type="checkbox"] {
   margin: 0;
   padding-left: 20px;
 }
+
+/* Ambient / idle screensaver */
+#ambient-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #eceeec;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  animation: ambient-fade-in 1.2s ease-in;
+}
+
+@keyframes ambient-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ambient-clock {
+  font-size: 6rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+.ambient-date {
+  font-size: 1.3rem;
+  color: #9aa39d;
+  margin-top: 8px;
+}
+
+.ambient-weather {
+  font-size: 1.3rem;
+  color: #9aa39d;
+  margin-top: 20px;
+  min-height: 1.6rem;
+}
+
+@media (max-width: 800px) {
+  .ambient-clock {
+    font-size: 4rem;
+  }
+}
