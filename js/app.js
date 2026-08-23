@@ -82,7 +82,7 @@ function route() {
 
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
-  if (window.HD_SETTINGS) window.HD_SETTINGS.applyAccentColor();
+  if (window.HD_SETTINGS) window.HD_SETTINGS.applyAppearance();
   renderNav();
   route();
   if (window.HD_SCREENSAVER) window.HD_SCREENSAVER.initScreensaver();

@@ -232,7 +232,14 @@ async function renderMiniNotesAndShopping(container) {
       : '<p class="text-muted">Shopping list is empty.</p>'}`;
 }
 
+let tripCountdownIntervalId = null;
+
 async function renderTripCountdown(container) {
+  if (tripCountdownIntervalId) {
+    clearInterval(tripCountdownIntervalId);
+    tripCountdownIntervalId = null;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const events = await HD_DB.dbGetAll('events');
@@ -244,13 +251,39 @@ async function renderTripCountdown(container) {
     container.innerHTML = '<p class="text-muted">🧳 No upcoming trips planned.</p>';
     return;
   }
-  const days = Math.round((HD_CAL.parseYMD(upcoming.date) - today) / 86400000);
-  const dayLabel = days === 0 ? 'today!' : days === 1 ? 'tomorrow' : `in ${days} days`;
-  container.innerHTML = `
-    <div class="trip-countdown">
-      <span class="trip-countdown-days">🧳 ${HD_CAL.escapeHtml(upcoming.title)}</span>
-      <span class="trip-countdown-label">${dayLabel}</span>
-    </div>`;
+
+  const target = HD_CAL.parseYMD(upcoming.date);
+  const unit = (n, label) => `<div class="tc-unit"><span class="tc-num">${n}</span><span class="tc-label">${label}</span></div>`;
+
+  function tick() {
+    if (!container.isConnected) {
+      clearInterval(tripCountdownIntervalId);
+      tripCountdownIntervalId = null;
+      return;
+    }
+    const diff = target - new Date();
+    if (diff <= 0) {
+      container.innerHTML = `<div class="trip-countdown"><span class="trip-countdown-title">🧳 ${HD_CAL.escapeHtml(upcoming.title)}</span><span class="trip-countdown-label">Today!</span></div>`;
+      clearInterval(tripCountdownIntervalId);
+      tripCountdownIntervalId = null;
+      return;
+    }
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    container.innerHTML = `
+      <div class="trip-countdown">
+        <span class="trip-countdown-title">🧳 ${HD_CAL.escapeHtml(upcoming.title)}</span>
+        <div class="trip-countdown-clock">
+          ${unit(days, 'd')}${unit(String(hours).padStart(2, '0'), 'h')}${unit(String(minutes).padStart(2, '0'), 'm')}${unit(String(seconds).padStart(2, '0'), 's')}
+        </div>
+      </div>`;
+  }
+
+  tick();
+  tripCountdownIntervalId = setInterval(tick, 1000);
 }
 
 async function renderDashboardTab(main) {

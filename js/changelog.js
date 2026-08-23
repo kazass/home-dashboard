@@ -1,7 +1,15 @@
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.7.0',
+    date: '2026-08-23',
+    notes: [
+      'Trip countdown is now a live ticking clock (days/hours/minutes/seconds), not just a day count.',
+      'Added 5 full Settings themes (Forest, Ocean, Sunset, Lavender, Slate) — the accent color picker still layers on top of whichever theme you pick.',
+    ],
+  },
   {
     version: '1.6.0',
     date: '2026-08-23',
