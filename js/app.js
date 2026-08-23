@@ -14,12 +14,17 @@ function renderNav() {
   nav.innerHTML = TABS.map(t =>
     `<button class="nav-btn" data-tab="${t.id}">${t.label}</button>`
   ).join('')
+    + '<button class="nav-btn nav-utility-btn" id="search-nav-btn">🔍 Search</button>'
     + '<button class="nav-btn nav-utility-btn" id="backup-nav-btn">Backup</button>'
     + '<button class="nav-btn nav-utility-btn" id="settings-nav-btn">Settings</button>'
     + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`;
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
     if (!btn) return;
+    if (btn.id === 'search-nav-btn') {
+      if (window.HD_SEARCH) window.HD_SEARCH.openSearchModal();
+      return;
+    }
     if (btn.id === 'backup-nav-btn') {
       if (window.HD_BACKUP) window.HD_BACKUP.openBackupModal();
       return;
@@ -77,6 +82,7 @@ function route() {
 
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {
+  if (window.HD_SETTINGS) window.HD_SETTINGS.applyAccentColor();
   renderNav();
   route();
   if (window.HD_SCREENSAVER) window.HD_SCREENSAVER.initScreensaver();

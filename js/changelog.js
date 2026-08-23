@@ -1,7 +1,18 @@
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.6.0',
+    date: '2026-08-23',
+    notes: [
+      'Added accent color picker in Settings.',
+      'Added a Search button that searches across every tab at once.',
+      'Chores can now auto-rotate between Kasparas and Izolda each time marked done.',
+      'Added a trip countdown widget on the Dashboard.',
+      'There may or may not be a hidden surprise on the version button. 🎉',
+    ],
+  },
   {
     version: '1.5.0',
     date: '2026-08-23',
@@ -54,7 +65,60 @@ const CHANGELOG = [
   },
 ];
 
+let easterEggClicks = [];
+
+function checkEasterEgg() {
+  const now = Date.now();
+  easterEggClicks = easterEggClicks.filter((t) => now - t < 2500);
+  easterEggClicks.push(now);
+  if (easterEggClicks.length >= 5) {
+    easterEggClicks = [];
+    return true;
+  }
+  return false;
+}
+
+function launchConfetti() {
+  const colors = ['#4f7fc7', '#c74f5c', '#3f9e8f', '#b0762f', '#a44fb0'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = `${Math.random() * 100}vw`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDuration = `${2 + Math.random() * 1.5}s`;
+    piece.style.animationDelay = `${Math.random() * 0.5}s`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+function openEasterEggModal() {
+  let overlay = document.getElementById('changelog-modal-overlay');
+  if (overlay) overlay.remove();
+  overlay = document.createElement('div');
+  overlay.id = 'changelog-modal-overlay';
+  overlay.className = 'modal-overlay';
+  document.body.appendChild(overlay);
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🎉 You found it!</h3>
+        <button class="modal-close" id="changelog-close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Built with ❤️ for Kasparas &amp; Izolda. Here's to fewer forgotten chores.</p>
+      </div>
+    </div>`;
+  overlay.querySelector('#changelog-close-btn').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  launchConfetti();
+}
+
 function openChangelogModal() {
+  if (checkEasterEgg()) {
+    openEasterEggModal();
+    return;
+  }
   let overlay = document.getElementById('changelog-modal-overlay');
   if (overlay) overlay.remove();
   overlay = document.createElement('div');

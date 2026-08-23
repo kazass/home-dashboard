@@ -75,7 +75,7 @@ html, body {
   font-size: 0.9rem;
 }
 
-#backup-nav-btn {
+#search-nav-btn {
   margin-top: 12px;
   border-top: 1px solid var(--border);
   padding-top: 16px;
@@ -133,7 +133,7 @@ html, body {
     font-size: 0.9rem;
   }
 
-  #backup-nav-btn {
+  #search-nav-btn {
     margin-top: 0;
     margin-left: 12px;
     border-top: none;
@@ -1090,6 +1090,58 @@ input[type="checkbox"] {
   align-items: center;
   gap: 8px;
   margin-top: 16px;
+}
+
+.accent-swatches {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.accent-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.accent-swatch.selected {
+  border-color: var(--text);
+}
+
+.trip-countdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.trip-countdown-days {
+  font-weight: 600;
+}
+
+.trip-countdown-label {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Easter egg */
+.confetti-piece {
+  position: fixed;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  z-index: 2000;
+  pointer-events: none;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(360deg); opacity: 0.8; }
 }
 
 /* Edit forms reused across list tabs */

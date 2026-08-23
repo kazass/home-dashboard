@@ -10,6 +10,7 @@ async function renderMaintenanceContent(main) {
         <option value="months">Months</option>
       </select>
       <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <label class="settings-checkbox"><input type="checkbox" name="rotate"> Rotate Kasparas/Izolda each time</label>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add chore</button>
     </form>
@@ -41,6 +42,7 @@ async function renderMaintenanceContent(main) {
           </select>
         </div>
         <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === c.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <label class="settings-checkbox"><input type="checkbox" name="rotate" ${c.rotate ? 'checked' : ''}> Rotate Kasparas/Izolda each time</label>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(c.notes || '')}</textarea>
         <div class="modal-form-actions">
           <button type="button" data-cancel-edit>Cancel</button>
@@ -62,7 +64,7 @@ async function renderMaintenanceContent(main) {
           <div class="task-row" data-id="${c.id}">
             <div class="task-row-main">
               <span class="task-title">${HD_CAL.escapeHtml(c.title)}</span>
-              <span class="badge">${c.assignedTo || 'Both'}</span>
+              <span class="badge">${c.assignedTo || 'Both'}${c.rotate ? ' 🔁' : ''}</span>
               <span class="text-muted">${HD_SCHEDULING.describeRecurrence(c)}</span>
               ${dueBadge(due)}
             </div>
@@ -85,6 +87,9 @@ async function renderMaintenanceContent(main) {
         doneAt.setHours(0, 0, 0, 0);
         chore.lastDoneAt = doneAt.getTime();
         chore.completedCount = (chore.completedCount || 0) + 1;
+        if (chore.rotate) {
+          chore.assignedTo = chore.assignedTo === 'Kasparas' ? 'Izolda' : 'Kasparas';
+        }
         await HD_DB.dbPut('scheduling', chore);
         refresh();
       });
@@ -124,6 +129,7 @@ async function renderMaintenanceContent(main) {
         chore.intervalCount = Number(fd.get('intervalCount')) || 1;
         chore.intervalUnit = fd.get('intervalUnit');
         chore.assignedTo = fd.get('assignedTo');
+        chore.rotate = fd.get('rotate') === 'on';
         chore.notes = fd.get('notes').trim();
         await HD_DB.dbPut('scheduling', chore);
         editingId = null;
@@ -144,6 +150,7 @@ async function renderMaintenanceContent(main) {
       title,
       category: 'chore',
       assignedTo: fd.get('assignedTo'),
+      rotate: fd.get('rotate') === 'on',
       recurrenceKind: 'interval',
       intervalCount: Number(fd.get('intervalCount')) || 1,
       intervalUnit: fd.get('intervalUnit'),

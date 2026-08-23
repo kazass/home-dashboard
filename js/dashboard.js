@@ -232,6 +232,27 @@ async function renderMiniNotesAndShopping(container) {
       : '<p class="text-muted">Shopping list is empty.</p>'}`;
 }
 
+async function renderTripCountdown(container) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const events = await HD_DB.dbGetAll('events');
+  const upcoming = events
+    .filter((e) => e.type === 'trip' && HD_CAL.parseYMD(e.date) >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+
+  if (!upcoming) {
+    container.innerHTML = '<p class="text-muted">🧳 No upcoming trips planned.</p>';
+    return;
+  }
+  const days = Math.round((HD_CAL.parseYMD(upcoming.date) - today) / 86400000);
+  const dayLabel = days === 0 ? 'today!' : days === 1 ? 'tomorrow' : `in ${days} days`;
+  container.innerHTML = `
+    <div class="trip-countdown">
+      <span class="trip-countdown-days">🧳 ${HD_CAL.escapeHtml(upcoming.title)}</span>
+      <span class="trip-countdown-label">${dayLabel}</span>
+    </div>`;
+}
+
 async function renderDashboardTab(main) {
   main.innerHTML = `
     <div class="dashboard-grid">
@@ -240,6 +261,7 @@ async function renderDashboardTab(main) {
         <section class="card decide-card">
           <button type="button" id="decide-btn" class="decide-launch-btn">🎲 Help me decide</button>
         </section>
+        <section class="card" id="dash-trip-countdown"></section>
         <section class="card" id="dash-weather-card">
           <h4>Weather</h4>
           <div id="dash-weather-body"></div>
@@ -255,6 +277,7 @@ async function renderDashboardTab(main) {
   function refreshAll() {
     HD_CAL.renderCalendar(calendarEl, onDayClick);
     renderAgenda(agendaEl);
+    renderTripCountdown(document.getElementById('dash-trip-countdown'));
   }
 
   function onDayClick(dateStr) {
@@ -262,6 +285,7 @@ async function renderDashboardTab(main) {
   }
 
   HD_CAL.renderCalendar(calendarEl, onDayClick);
+  renderTripCountdown(document.getElementById('dash-trip-countdown'));
   renderWeatherWidget(document.getElementById('dash-weather-body'));
   renderAgenda(agendaEl);
   renderMiniNotesAndShopping(document.getElementById('dash-notes-shopping'));
