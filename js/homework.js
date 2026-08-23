@@ -36,21 +36,31 @@ async function renderHomeWorkContent(main) {
     tasks.sort((a, b) => (a.status === 'done') - (b.status === 'done') || (b.createdAt - a.createdAt));
 
     listEl.innerHTML = tasks.length
-      ? tasks.map((t) => t.id === editingId ? editFormHtml(t) : `
+      ? tasks.map((t) => {
+        if (t.id === editingId) return editFormHtml(t);
+        const todayKey = HD_CAL.ymd(new Date());
+        const dueBadge = t.dueDate
+          ? (t.dueDate < todayKey ? '<span class="task-due overdue">Overdue</span>'
+            : t.dueDate === todayKey ? '<span class="task-due due-today">Due today</span>'
+            : `<span class="task-due">Due ${t.dueDate}</span>`)
+          : '';
+        const metaParts = [t.when, `${t.points || 1}pt${(t.points || 1) === 1 ? '' : 's'}`].filter(Boolean);
+        return `
         <div class="task-row ${t.status === 'done' ? 'done' : ''}" data-id="${t.id}">
           <label class="task-row-main">
             <input type="checkbox" data-toggle="${t.id}" ${t.status === 'done' ? 'checked' : ''}>
             <span class="task-title">${HD_CAL.escapeHtml(t.title)}</span>
-            ${t.when ? `<span class="badge">${HD_CAL.escapeHtml(t.when)}</span>` : ''}
-            ${t.dueDate ? `<span class="badge">Due ${t.dueDate}</span>` : ''}
+            ${dueBadge}
             ${HD_SETTINGS.personBadgeHtml(t.assignedTo)}
           </label>
+          <div class="task-meta text-muted">${metaParts.map((p) => HD_CAL.escapeHtml(p)).join(' · ')}</div>
           ${t.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(t.notes)}</div>` : ''}
           <div class="task-actions">
             <button type="button" data-edit="${t.id}">Edit</button>
             <button type="button" data-delete="${t.id}">Delete</button>
           </div>
-        </div>`).join('')
+        </div>`;
+      }).join('')
       : '<p class="text-muted">No home tasks yet.</p>';
 
     listEl.querySelectorAll('[data-toggle]').forEach((cb) => {

@@ -194,8 +194,11 @@ async function renderAgenda(container) {
   const listOrEmpty = (items, render, emptyText) =>
     items.length ? `<ul class="agenda-list">${items.map(render).join('')}</ul>` : `<p class="text-muted">${emptyText}</p>`;
 
+  const summaryText = window.HD_DIGEST ? await HD_DIGEST.getWeeklySummaryText() : '';
+
   container.innerHTML = `
-    <h4>Agenda</h4>
+    <h4>Today &amp; this week</h4>
+    ${summaryText ? `<p class="text-muted agenda-summary">${summaryText}</p>` : ''}
     <div class="agenda-section">
       <h5>Due today</h5>
       ${listOrEmpty(dueToday, (e) => `<li>${HD_CAL.escapeHtml(e.title)} ${HD_SETTINGS.personBadgeHtml(e.assignedTo)}</li>`, 'Nothing due today.')}
@@ -299,7 +302,6 @@ const SIDEBAR_CARD_DEFS = {
     html: '<h4>Weather</h4><div id="dash-weather-body"></div>',
     init: () => renderWeatherWidget(document.getElementById('dash-weather-body')),
   },
-  digest: { html: '', init: (el) => window.HD_DIGEST && HD_DIGEST.renderWeeklyDigest(el) },
   goal: { html: '', init: (el) => window.HD_GOAL && HD_GOAL.renderGoalCard(el) },
   activities: { html: '', init: (el) => window.HD_ACTIVITIES && HD_ACTIVITIES.renderActivitiesCard(el) },
   agenda: { html: '', init: (el) => renderAgenda(el) },
@@ -318,7 +320,9 @@ function sidebarCardHtml(id) {
 
 async function renderDashboardTab(main) {
   if (window.HD_LAYOUT) HD_LAYOUT.resetEditMode();
-  const order = window.HD_LAYOUT ? HD_LAYOUT.getSidebarOrder() : Object.keys(SIDEBAR_CARD_DEFS);
+  const fullOrder = window.HD_LAYOUT ? HD_LAYOUT.getSidebarOrder() : Object.keys(SIDEBAR_CARD_DEFS);
+  const hidden = window.HD_SETTINGS ? HD_SETTINGS.getHiddenCards() : [];
+  const order = fullOrder.filter((id) => !hidden.includes(id));
 
   main.innerHTML = `
     <div class="dashboard-toolbar">

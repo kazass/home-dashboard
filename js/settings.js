@@ -4,6 +4,15 @@ const DEFAULT_SETTINGS = {
   personColors: { Kasparas: '#4f7fc7', Izolda: '#c74f8f' },
   userNames: ['Kasparas', 'Izolda'],
   dailyStatusEnabled: true,
+  hiddenCards: [],
+};
+
+// Display names for the "Dashboard cards" show/hide list in Settings.
+// Keep in sync with DEFAULT_SIDEBAR_ORDER in layout.js.
+const SIDEBAR_CARD_LABELS = {
+  decide: 'Help me decide', trip: 'Trip countdown', weather: 'Weather',
+  goal: 'Family goal', activities: 'Activities', agenda: 'Today & this week',
+  notesShopping: 'Notes & Shopping',
 };
 const IDLE_TIMEOUT_OPTIONS = [1, 2, 3, 5, 10, 15, 30];
 
@@ -86,6 +95,16 @@ function getAssigneeOptions() {
 
 function getDailyStatusEnabled() {
   return getSettings().dailyStatusEnabled;
+}
+
+function getHiddenCards() {
+  return getSettings().hiddenCards || [];
+}
+
+function setCardHidden(cardId, hidden) {
+  const current = getHiddenCards();
+  const next = hidden ? [...new Set([...current, cardId])] : current.filter((id) => id !== cardId);
+  saveSettings({ hiddenCards: next });
 }
 
 // Renames one of the two household members everywhere: the settings source
@@ -235,6 +254,17 @@ function openSettingsModal() {
         </div>
 
         <div class="settings-field">
+          Dashboard cards
+          <div class="card-visibility-row">
+            ${window.HD_LAYOUT ? HD_LAYOUT.DEFAULT_SIDEBAR_ORDER.map((id) => `
+              <label class="settings-checkbox">
+                <input type="checkbox" data-card-visibility="${id}" ${getHiddenCards().includes(id) ? '' : 'checked'}>
+                ${SIDEBAR_CARD_LABELS[id] || id}
+              </label>`).join('') : ''}
+          </div>
+        </div>
+
+        <div class="settings-field">
           Manage users
           <div class="person-color-row">
             ${getUserNames().map((name) => `
@@ -247,7 +277,7 @@ function openSettingsModal() {
 
         <label class="settings-field settings-checkbox">
           <input type="checkbox" id="daily-status-checkbox" ${getDailyStatusEnabled() ? 'checked' : ''}>
-          Nag about today's chores/tasks (hourly popup)
+          Show a "due today" badge for chores/tasks
         </label>
 
         <label class="settings-field">
@@ -306,6 +336,16 @@ function openSettingsModal() {
   });
   overlay.querySelector('#daily-status-checkbox').addEventListener('change', (e) => {
     saveSettings({ dailyStatusEnabled: e.target.checked });
+    if (window.HD_DAILY_STATUS) HD_DAILY_STATUS.refreshBadge();
+  });
+  overlay.querySelectorAll('[data-card-visibility]').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      setCardHidden(cb.dataset.cardVisibility, !cb.checked);
+      const currentTab = location.hash.replace('#', '') || 'dashboard';
+      if (window.HD_DASHBOARD && currentTab === 'dashboard') {
+        HD_DASHBOARD.renderDashboardTab(document.getElementById('main'));
+      }
+    });
   });
   overlay.querySelector('#reset-layout-btn').addEventListener('click', () => {
     if (window.HD_LAYOUT) HD_LAYOUT.resetLayout();
@@ -359,4 +399,5 @@ window.HD_SETTINGS = {
   getPersonColor, personBadgeHtml, applyAppearance, openSettingsModal,
   spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
   getUserNames, getAssigneeOptions, getDailyStatusEnabled, renameUser,
+  getHiddenCards, setCardHidden,
 };

@@ -1,4 +1,7 @@
-async function renderWeeklyDigest(container) {
+// Returns the one-line "This week: X, Y, Z." summary sentence as plain text
+// (caller decides how/where to render it) so the Agenda card can fold it in
+// instead of keeping a separate Digest card with near-identical source data.
+async function getWeeklySummaryText() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const weekStart = HD_CAL.startOfWeek(today);
@@ -26,9 +29,7 @@ async function renderWeeklyDigest(container) {
   if (homeWork.length) parts.push(`${homeWork.length} open task${homeWork.length === 1 ? '' : 's'}`);
   if (rotating) parts.push(`${HD_CAL.escapeHtml(rotating.assignedTo)}'s turn for ${HD_CAL.escapeHtml(rotating.title.toLowerCase())}`);
 
-  container.innerHTML = `
-    <h4>This week</h4>
-    <p>${parts.join(', ')}.</p>`;
+  return `${parts.join(', ')}.`;
 }
 
-window.HD_DIGEST = { renderWeeklyDigest };
+window.HD_DIGEST = { getWeeklySummaryText };

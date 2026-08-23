@@ -72,10 +72,10 @@ async function renderMaintenanceContent(main) {
           <div class="task-row" data-id="${c.id}">
             <div class="task-row-main">
               <span class="task-title">${HD_CAL.escapeHtml(c.title)}</span>
-              ${HD_SETTINGS.personBadgeHtml(c.assignedTo)}${c.rotate ? ' 🔁' : ''}
-              <span class="text-muted">${HD_SCHEDULING.describeRecurrence(c)}</span>
+              ${HD_SETTINGS.personBadgeHtml(c.assignedTo)}
               ${dueBadge(due)}
             </div>
+            <div class="task-meta text-muted">${HD_SCHEDULING.describeRecurrence(c)}${c.rotate ? ' · 🔁 rotates' : ''}</div>
             <div class="streak-row">
               ${streakHtml(c.completedCount || 0)}
               <span class="text-muted">${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''} — ${c.points || 1}pt${(c.points || 1) === 1 ? '' : 's'}${c.currentStreak > 1 ? `, 🔥${c.currentStreak} streak` : ''}</span>

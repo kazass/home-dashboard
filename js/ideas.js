@@ -34,21 +34,24 @@ async function renderIdeasTab(main) {
     ideas.sort((a, b) => (a.status === 'done') - (b.status === 'done') || (b.createdAt - a.createdAt));
 
     listEl.innerHTML = ideas.length
-      ? ideas.map((i) => i.id === editingId ? editFormHtml(i) : `
+      ? ideas.map((i) => {
+        if (i.id === editingId) return editFormHtml(i);
+        const tags = (i.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+        return `
         <div class="task-row ${i.status === 'done' ? 'done' : ''}" data-id="${i.id}">
           <label class="task-row-main">
             <input type="checkbox" data-toggle="${i.id}" ${i.status === 'done' ? 'checked' : ''}>
             <span class="task-title">${HD_CAL.escapeHtml(i.title)}</span>
-            ${i.when ? `<span class="badge">${HD_CAL.escapeHtml(i.when)}</span>` : ''}
             ${HD_SETTINGS.personBadgeHtml(i.assignedTo)}
-            ${(i.tags || '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => `<span class="badge tag">${HD_CAL.escapeHtml(t)}</span>`).join('')}
           </label>
+          ${i.when || tags.length ? `<div class="task-meta text-muted">${i.when ? HD_CAL.escapeHtml(i.when) : ''}${i.when && tags.length ? ' · ' : ''}${tags.map((t) => `<span class="badge tag">${HD_CAL.escapeHtml(t)}</span>`).join('')}</div>` : ''}
           ${i.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(i.notes)}</div>` : ''}
           <div class="task-actions">
             <button type="button" data-edit="${i.id}">Edit</button>
             <button type="button" data-delete="${i.id}">Delete</button>
           </div>
-        </div>`).join('')
+        </div>`;
+      }).join('')
       : '<p class="text-muted">No ideas yet.</p>';
 
     listEl.querySelectorAll('[data-toggle]').forEach((cb) => {

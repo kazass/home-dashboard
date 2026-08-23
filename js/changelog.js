@@ -1,4 +1,4 @@
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.2.2';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,16 @@ const APP_VERSION = '2.2.1';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.2.2',
+    date: '2026-08-24',
+    notes: [
+      'Merged the "This week" digest into the Agenda card (renamed "Today & this week") — one summary instead of two overlapping cards.',
+      'Replaced the hourly due-today popup with a quiet badge in the corner — tap it to see/act on what\'s due, no more auto-interrupting popup.',
+      'Trimmed clutter on chore/task/idea rows — secondary info (recurrence, "when", tags, points) now sits on a smaller line under the title instead of crowding it.',
+      'Added per-card show/hide toggles for the dashboard sidebar in Settings.',
+    ],
+  },
   {
     version: '2.2.1',
     date: '2026-08-24',

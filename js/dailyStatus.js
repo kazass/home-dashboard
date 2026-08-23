@@ -1,6 +1,4 @@
-const DAILY_STATUS_LAST_SHOWN_KEY = 'hd-daily-status-last-shown';
 const DAILY_STATUS_RECHECK_MS = 5 * 60 * 1000;
-const DAILY_STATUS_REPEAT_MS = 60 * 60 * 1000;
 
 function todayYmd() {
   return HD_CAL.ymd(new Date());
@@ -128,6 +126,7 @@ function openDailyStatusModal() {
         if (btn.dataset.kind === 'chore') await markChoreDone(btn.dataset.markDone);
         else await markHomeworkDone(btn.dataset.markDone);
         render();
+        refreshBadge();
       });
     });
 
@@ -136,6 +135,7 @@ function openDailyStatusModal() {
         btn.disabled = true;
         await postponeItem({ kind: btn.dataset.kind, id: btn.dataset.postpone }, Number(btn.dataset.days));
         render();
+        refreshBadge();
       });
     });
   }
@@ -144,22 +144,35 @@ function openDailyStatusModal() {
   render();
 }
 
-function shouldShow() {
-  if (!HD_SETTINGS.getDailyStatusEnabled()) return false;
-  if (document.getElementById('daily-status-modal-overlay')) return false;
-  const last = Number(localStorage.getItem(DAILY_STATUS_LAST_SHOWN_KEY) || 0);
-  return Date.now() - last >= DAILY_STATUS_REPEAT_MS;
+// A quiet always-there badge beats an hourly popup interruption — same
+// information (tap to see/act on it), no forced modal.
+function renderBadge(count) {
+  let badge = document.getElementById('daily-status-badge');
+  if (!count) {
+    if (badge) badge.remove();
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement('button');
+    badge.id = 'daily-status-badge';
+    badge.addEventListener('click', openDailyStatusModal);
+    document.body.appendChild(badge);
+  }
+  badge.textContent = `⏰ ${count} due`;
+}
+
+async function refreshBadge() {
+  if (!HD_SETTINGS.getDailyStatusEnabled()) {
+    renderBadge(0);
+    return;
+  }
+  const items = await getDueToday();
+  renderBadge(items.length);
 }
 
 function initDailyStatusCheck() {
-  setInterval(async () => {
-    if (!shouldShow()) return;
-    const items = await getDueToday();
-    if (items.length) {
-      localStorage.setItem(DAILY_STATUS_LAST_SHOWN_KEY, String(Date.now()));
-      openDailyStatusModal();
-    }
-  }, DAILY_STATUS_RECHECK_MS);
+  refreshBadge();
+  setInterval(refreshBadge, DAILY_STATUS_RECHECK_MS);
 }
 
-window.HD_DAILY_STATUS = { openDailyStatusModal, initDailyStatusCheck, getDueToday };
+window.HD_DAILY_STATUS = { openDailyStatusModal, initDailyStatusCheck, getDueToday, refreshBadge };
