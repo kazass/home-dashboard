@@ -209,6 +209,8 @@ html, body {
   padding: 16px;
   position: relative;
   overflow: auto;
+  min-height: 90px;
+  min-width: 160px;
 }
 
 .card h4 {

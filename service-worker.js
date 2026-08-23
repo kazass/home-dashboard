@@ -1,4 +1,4 @@
-const CACHE_NAME = 'home-dashboard-v22';
+const CACHE_NAME = 'home-dashboard-v23';
 const ASSETS = [
   './',
   './index.html',

@@ -48,11 +48,13 @@ function isEditMode() {
 
 // Watches an element for user-driven resizes (native CSS `resize` handle) and
 // persists the final size, debounced so we don't write on every pixel.
+const MIN_TRACKED_SIZE_PX = 90;
+
 function trackResize(el, id) {
   const saved = getSize(id);
   if (saved) {
-    el.style.width = saved.width;
-    el.style.height = saved.height;
+    if (parseFloat(saved.width) >= MIN_TRACKED_SIZE_PX) el.style.width = saved.width;
+    if (parseFloat(saved.height) >= MIN_TRACKED_SIZE_PX) el.style.height = saved.height;
   }
   let debounceId = null;
   const observer = new ResizeObserver(() => {

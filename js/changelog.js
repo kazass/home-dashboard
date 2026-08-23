@@ -1,4 +1,4 @@
-const APP_VERSION = '2.1.2';
+const APP_VERSION = '2.1.3';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,14 @@ const APP_VERSION = '2.1.2';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.1.3',
+    date: '2026-08-24',
+    notes: [
+      'Fixed dashboard cards still showing near-empty/collapsed after the overlap fix — cards now have a minimum size no matter how small a past resize got stuck at.',
+      'Release notes now mark each line 🛠️ fix or ✨ feature.',
+    ],
+  },
   {
     version: '2.1.2',
     date: '2026-08-24',
@@ -190,7 +198,7 @@ function openChangelogModal() {
         ${CHANGELOG.map((entry) => `
           <div class="changelog-entry">
             <h4>v${entry.version} <span class="text-muted">— ${entry.date}</span></h4>
-            <ul>${entry.notes.map((n) => `<li>${HD_CAL.escapeHtml(n)}</li>`).join('')}</ul>
+            <ul>${entry.notes.map((n) => `<li>${n.toLowerCase().startsWith('fixed') ? '🛠️' : '✨'} ${HD_CAL.escapeHtml(n)}</li>`).join('')}</ul>
           </div>`).join('')}
       </div>
     </div>`;
