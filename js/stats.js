@@ -5,11 +5,15 @@ async function buildStatsHtml() {
   const chores = (await HD_DB.dbGetAll('scheduling')).filter((s) => s.category === 'chore');
   const homeWork = await HD_DB.dbGetAll('homeWork');
   const ideas = await HD_DB.dbGetAll('ideas');
+  const activities = window.HD_ACTIVITIES ? await HD_ACTIVITIES.getActivities() : [];
+  const allCompletions = await HD_DB.dbGetAll('completions');
+  const weekStart = HD_CAL.startOfWeek(now).getTime();
 
   // Per-person chore completions. Rotating chores only have one current
   // "assignedTo", so their whole count attributes to whoever holds it now —
   // a simplification, not a true per-turn split.
-  const byPerson = { Kasparas: 0, Izolda: 0 };
+  const byPerson = {};
+  for (const name of HD_SETTINGS.getUserNames()) byPerson[name] = 0;
   for (const c of chores) {
     if (byPerson[c.assignedTo] !== undefined) byPerson[c.assignedTo] += c.completedCount || 0;
   }
@@ -20,7 +24,18 @@ async function buildStatsHtml() {
 
   const topChores = [...chores].sort((a, b) => (b.completedCount || 0) - (a.completedCount || 0)).slice(0, 5);
 
+  const leaderboard = window.HD_POINTS ? await HD_POINTS.getLeaderboard() : {};
+  const maxPoints = Math.max(1, ...Object.values(leaderboard));
+
   return `
+    <h4>🏆 Leaderboard</h4>
+    ${Object.entries(leaderboard).map(([name, points]) => `
+      <div class="stats-bar-row">
+        ${HD_SETTINGS.personBadgeHtml(name)}
+        <div class="stats-bar"><div class="stats-bar-fill" style="width:${(points / maxPoints) * 100}%; background:${HD_SETTINGS.getPersonColor(name) || 'var(--accent)'}"></div></div>
+        <span class="text-muted">${points}pt${points === 1 ? '' : 's'}</span>
+      </div>`).join('')}
+
     <h4>Chores by person</h4>
     ${Object.entries(byPerson).map(([name, count]) => `
       <div class="stats-bar-row">
@@ -37,7 +52,19 @@ async function buildStatsHtml() {
       <div class="stats-streak-row">
         <span class="task-title">${HD_CAL.escapeHtml(c.title)}</span>
         ${HD_MAINTENANCE.streakHtml(c.completedCount || 0)}
-      </div>`).join('') : '<p class="text-muted">No chores tracked yet.</p>'}`;
+      </div>`).join('') : '<p class="text-muted">No chores tracked yet.</p>'}
+
+    <h4>Activities</h4>
+    ${activities.length ? activities.map((a) => {
+      const logs = allCompletions.filter((c) => c.itemType === 'activity' && c.itemId === a.id);
+      const thisWeek = logs.filter((c) => c.createdAt >= weekStart).length;
+      const total = logs.length;
+      return `
+        <div class="stats-streak-row">
+          <span class="task-title">${HD_CAL.escapeHtml(a.name)}</span>
+          <span class="text-muted">${thisWeek} this week · ${total} total</span>
+        </div>`;
+    }).join('') : '<p class="text-muted">No activities yet — add one on the Activities dashboard card.</p>'}`;
 }
 
 function openStatsPanel() {

@@ -2,6 +2,8 @@ const SETTINGS_KEY = 'hd-settings';
 const DEFAULT_SETTINGS = {
   idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '',
   personColors: { Kasparas: '#4f7fc7', Izolda: '#c74f8f' },
+  userNames: ['Kasparas', 'Izolda'],
+  dailyStatusEnabled: true,
 };
 const IDLE_TIMEOUT_OPTIONS = [1, 2, 3, 5, 10, 15, 30];
 
@@ -71,6 +73,65 @@ function getShowCompletedOnCalendar() {
 
 function getPersonColor(name) {
   return getSettings().personColors[name] || null;
+}
+
+function getUserNames() {
+  const names = getSettings().userNames;
+  return Array.isArray(names) && names.length ? names : Object.keys(DEFAULT_SETTINGS.personColors);
+}
+
+function getAssigneeOptions() {
+  return ['Both', ...getUserNames()];
+}
+
+function getDailyStatusEnabled() {
+  return getSettings().dailyStatusEnabled;
+}
+
+// Renames one of the two household members everywhere: the settings source
+// of truth (userNames/personColors) plus every stored record that holds the
+// literal name as a string (assignedTo/addedBy/ratings keys). There's no
+// per-user id anywhere in the app — assignedTo etc. are compared as literal
+// strings throughout — so renaming has to rewrite history rather than just
+// relabel it.
+async function renameUser(oldName, newName) {
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return false;
+  const names = getUserNames();
+  if (names.includes(trimmed)) return false;
+  const updatedNames = names.map((n) => (n === oldName ? trimmed : n));
+  const personColors = { ...getSettings().personColors };
+  personColors[trimmed] = personColors[oldName];
+  delete personColors[oldName];
+  saveSettings({ userNames: updatedNames, personColors });
+  await migratePersonNameInStores(oldName, trimmed);
+  return true;
+}
+
+async function migratePersonNameInStores(oldName, newName) {
+  const renameField = async (store, field) => {
+    const records = await HD_DB.dbGetAll(store);
+    for (const r of records) {
+      if (r[field] === oldName) {
+        r[field] = newName;
+        await HD_DB.dbPut(store, r);
+      }
+    }
+  };
+  await renameField('scheduling', 'assignedTo');
+  await renameField('homeWork', 'assignedTo');
+  await renameField('ideas', 'assignedTo');
+  await renameField('shoppingItems', 'addedBy');
+  if (window.HD_DB.STORES.includes('completions')) await renameField('completions', 'person');
+
+  const recipes = await HD_DB.dbGetAll('recipes');
+  for (const r of recipes) {
+    if (r.ratings && Object.prototype.hasOwnProperty.call(r.ratings, oldName)) {
+      r.ratings[newName] = r.ratings[oldName];
+      delete r.ratings[oldName];
+      await HD_DB.dbPut('recipes', r);
+    }
+  }
 }
 
 // Shared badge renderer so "assigned to" shows as a colored chip for
@@ -174,15 +235,20 @@ function openSettingsModal() {
         </div>
 
         <div class="settings-field">
-          Person colors
+          Manage users
           <div class="person-color-row">
-            ${Object.keys(DEFAULT_SETTINGS.personColors).map((name) => `
+            ${getUserNames().map((name) => `
               <label class="person-color-item">
                 <input type="color" data-person-color="${name}" value="${getPersonColor(name)}">
-                ${name}
+                <input type="text" class="user-name-input" data-user-name="${HD_CAL.escapeHtml(name)}" value="${HD_CAL.escapeHtml(name)}">
               </label>`).join('')}
           </div>
         </div>
+
+        <label class="settings-field settings-checkbox">
+          <input type="checkbox" id="daily-status-checkbox" ${getDailyStatusEnabled() ? 'checked' : ''}>
+          Nag about today's chores/tasks (hourly popup)
+        </label>
 
         <label class="settings-field">
           Spotify link
@@ -219,6 +285,27 @@ function openSettingsModal() {
       const personColors = { ...getSettings().personColors, [input.dataset.personColor]: input.value };
       saveSettings({ personColors });
     });
+  });
+  overlay.querySelectorAll('[data-user-name]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      const oldName = input.dataset.userName;
+      const newName = input.value.trim();
+      if (!newName || newName === oldName) { input.value = oldName; return; }
+      if (!confirm(`Rename "${oldName}" to "${newName}" everywhere? This updates all existing chores, tasks, and ratings.`)) {
+        input.value = oldName;
+        return;
+      }
+      const ok = await renameUser(oldName, newName);
+      if (!ok) {
+        alert('That name is already in use.');
+        input.value = oldName;
+        return;
+      }
+      location.reload();
+    });
+  });
+  overlay.querySelector('#daily-status-checkbox').addEventListener('change', (e) => {
+    saveSettings({ dailyStatusEnabled: e.target.checked });
   });
   overlay.querySelector('#reset-layout-btn').addEventListener('click', () => {
     if (window.HD_LAYOUT) HD_LAYOUT.resetLayout();
@@ -271,4 +358,5 @@ window.HD_SETTINGS = {
   getSettings, saveSettings, getIdleTimeoutMinutes, getShowCompletedOnCalendar,
   getPersonColor, personBadgeHtml, applyAppearance, openSettingsModal,
   spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
+  getUserNames, getAssigneeOptions, getDailyStatusEnabled, renameUser,
 };

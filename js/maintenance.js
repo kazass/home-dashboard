@@ -15,8 +15,9 @@ async function renderMaintenanceContent(main) {
         <option value="weeks" selected>Weeks</option>
         <option value="months">Months</option>
       </select>
-      <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
-      <label class="settings-checkbox"><input type="checkbox" name="rotate"> Rotate Kasparas/Izolda each time</label>
+      <input type="number" name="points" min="0" value="1" style="width:60px" placeholder="Pts">
+      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <label class="settings-checkbox"><input type="checkbox" name="rotate"> Rotate between users each time</label>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add chore</button>
     </form>
@@ -47,8 +48,9 @@ async function renderMaintenanceContent(main) {
             <option value="months" ${c.intervalUnit === 'months' ? 'selected' : ''}>Months</option>
           </select>
         </div>
-        <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === c.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
-        <label class="settings-checkbox"><input type="checkbox" name="rotate" ${c.rotate ? 'checked' : ''}> Rotate Kasparas/Izolda each time</label>
+        <input type="number" name="points" min="0" value="${c.points || 1}" style="width:60px" placeholder="Pts">
+        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === c.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <label class="settings-checkbox"><input type="checkbox" name="rotate" ${c.rotate ? 'checked' : ''}> Rotate between users each time</label>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(c.notes || '')}</textarea>
         <div class="modal-form-actions">
           <button type="button" data-cancel-edit>Cancel</button>
@@ -76,7 +78,7 @@ async function renderMaintenanceContent(main) {
             </div>
             <div class="streak-row">
               ${streakHtml(c.completedCount || 0)}
-              <span class="text-muted">${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''}</span>
+              <span class="text-muted">${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''} — ${c.points || 1}pt${(c.points || 1) === 1 ? '' : 's'}${c.currentStreak > 1 ? `, 🔥${c.currentStreak} streak` : ''}</span>
             </div>
             ${c.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(c.notes)}</div>` : ''}
             <div class="task-actions">
@@ -92,14 +94,26 @@ async function renderMaintenanceContent(main) {
       btn.addEventListener('click', async () => {
         btn.disabled = true;
         const chore = chores.find((c) => c.id === btn.dataset.done);
+        const due = HD_SCHEDULING.choreNextDue(chore);
         const doneAt = new Date();
         doneAt.setHours(0, 0, 0, 0);
+        const onTime = !chore.lastDoneAt || doneAt <= due;
+        const creditedTo = chore.assignedTo;
+        chore.currentStreak = onTime ? (chore.currentStreak || 0) + 1 : 1;
         chore.lastDoneAt = doneAt.getTime();
         chore.completedCount = (chore.completedCount || 0) + 1;
         if (chore.rotate) {
-          chore.assignedTo = chore.assignedTo === 'Kasparas' ? 'Izolda' : 'Kasparas';
+          const names = HD_SETTINGS.getUserNames();
+          const idx = names.indexOf(chore.assignedTo);
+          if (idx >= 0) chore.assignedTo = names[(idx + 1) % names.length];
         }
         await HD_DB.dbPut('scheduling', chore);
+        if (window.HD_POINTS) {
+          await HD_POINTS.logCompletion({
+            itemType: 'chore', itemId: chore.id, person: creditedTo,
+            points: (chore.points || 1) + HD_POINTS.streakBonus(chore.currentStreak),
+          });
+        }
         refresh();
       });
     });
@@ -139,6 +153,7 @@ async function renderMaintenanceContent(main) {
         chore.intervalUnit = fd.get('intervalUnit');
         chore.assignedTo = fd.get('assignedTo');
         chore.rotate = fd.get('rotate') === 'on';
+        chore.points = Number(fd.get('points')) || 1;
         chore.notes = fd.get('notes').trim();
         await HD_DB.dbPut('scheduling', chore);
         editingId = null;
@@ -160,6 +175,7 @@ async function renderMaintenanceContent(main) {
       category: 'chore',
       assignedTo: fd.get('assignedTo'),
       rotate: fd.get('rotate') === 'on',
+      points: Number(fd.get('points')) || 1,
       recurrenceKind: 'interval',
       intervalCount: Number(fd.get('intervalCount')) || 1,
       intervalUnit: fd.get('intervalUnit'),
@@ -169,6 +185,8 @@ async function renderMaintenanceContent(main) {
       notes: fd.get('notes').trim(),
       lastDoneAt: null,
       completedCount: 0,
+      currentStreak: 0,
+      postponedUntil: null,
       createdAt: Date.now(),
     });
     ev.target.reset();

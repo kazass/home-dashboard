@@ -1,12 +1,12 @@
-const HOMEWORK_ASSIGNEES = ['Both', 'Kasparas', 'Izolda'];
-
 async function renderHomeWorkContent(main) {
   main.innerHTML = `
     <p class="text-muted">One-off things around the house — not on a repeating schedule.</p>
     <form id="homework-form" class="inline-form">
       <input name="title" placeholder="Task (e.g. Fix the fence)" required>
       <input name="when" placeholder="When (optional, e.g. next winter)">
-      <select name="assignedTo">${HOMEWORK_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <input type="date" name="dueDate" title="Due date (optional) — lets this task appear in the daily status popup">
+      <input type="number" name="points" min="0" value="1" style="width:60px" placeholder="Pts">
+      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add task</button>
     </form>
@@ -20,7 +20,9 @@ async function renderHomeWorkContent(main) {
       <form class="item-edit-form" data-edit-form="${t.id}">
         <input name="title" value="${HD_CAL.escapeHtml(t.title)}" required>
         <input name="when" value="${HD_CAL.escapeHtml(t.when || '')}" placeholder="When (optional)">
-        <select name="assignedTo">${HOMEWORK_ASSIGNEES.map((a) => `<option value="${a}" ${a === t.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <input type="date" name="dueDate" value="${t.dueDate || ''}" title="Due date (optional)">
+        <input type="number" name="points" min="0" value="${t.points || 1}" style="width:60px" placeholder="Pts">
+        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === t.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(t.notes || '')}</textarea>
         <div class="modal-form-actions">
           <button type="button" data-cancel-edit>Cancel</button>
@@ -40,6 +42,7 @@ async function renderHomeWorkContent(main) {
             <input type="checkbox" data-toggle="${t.id}" ${t.status === 'done' ? 'checked' : ''}>
             <span class="task-title">${HD_CAL.escapeHtml(t.title)}</span>
             ${t.when ? `<span class="badge">${HD_CAL.escapeHtml(t.when)}</span>` : ''}
+            ${t.dueDate ? `<span class="badge">Due ${t.dueDate}</span>` : ''}
             ${HD_SETTINGS.personBadgeHtml(t.assignedTo)}
           </label>
           ${t.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(t.notes)}</div>` : ''}
@@ -58,10 +61,19 @@ async function renderHomeWorkContent(main) {
           const completedDate = new Date();
           completedDate.setHours(0, 0, 0, 0);
           task.completedAt = completedDate.getTime();
+          const onTime = !task.dueDate || task.dueDate >= HD_CAL.ymd(completedDate);
+          task.currentStreak = onTime ? (task.currentStreak || 0) + 1 : 1;
+          await HD_DB.dbPut('homeWork', task);
+          if (window.HD_POINTS) {
+            await HD_POINTS.logCompletion({
+              itemType: 'homework', itemId: task.id, person: task.assignedTo,
+              points: (task.points || 1) + HD_POINTS.streakBonus(task.currentStreak),
+            });
+          }
         } else {
           task.completedAt = null;
+          await HD_DB.dbPut('homeWork', task);
         }
-        await HD_DB.dbPut('homeWork', task);
         refresh();
       });
     });
@@ -98,6 +110,8 @@ async function renderHomeWorkContent(main) {
         if (!title) return;
         task.title = title;
         task.when = fd.get('when').trim();
+        task.dueDate = fd.get('dueDate') || null;
+        task.points = Number(fd.get('points')) || 1;
         task.assignedTo = fd.get('assignedTo');
         task.notes = fd.get('notes').trim();
         await HD_DB.dbPut('homeWork', task);
@@ -116,9 +130,13 @@ async function renderHomeWorkContent(main) {
       id: crypto.randomUUID(),
       title,
       when: fd.get('when').trim(),
+      dueDate: fd.get('dueDate') || null,
+      points: Number(fd.get('points')) || 1,
       assignedTo: fd.get('assignedTo'),
       notes: fd.get('notes').trim(),
       status: 'todo',
+      currentStreak: 0,
+      postponedUntil: null,
       createdAt: Date.now(),
     });
     ev.target.reset();

@@ -4,8 +4,6 @@ const EVENT_TYPES = [
   { value: 'trip', label: 'Trip' },
 ];
 
-const ASSIGNEES = ['Both', 'Kasparas', 'Izolda'];
-
 const CAL_STATE = {
   mode: 'month', // 'month' | 'week'
   refDate: new Date(),
@@ -342,5 +340,5 @@ function googleCalendarLink(item) {
 window.HD_CAL = {
   ymd, parseYMD, addDays, startOfWeek, monthMatrix, loadEventsAndHolidays,
   getCompletedItemsInRange, groupByDate, renderCalendar, googleCalendarLink, escapeHtml,
-  chipClass, chipIcon, EVENT_TYPES, ASSIGNEES, CAL_STATE,
+  chipClass, chipIcon, EVENT_TYPES, CAL_STATE,
 };

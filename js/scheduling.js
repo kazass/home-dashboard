@@ -1,5 +1,4 @@
 const SCHED_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const SCHED_ASSIGNEES = ['Both', 'Kasparas', 'Izolda'];
 const SCHED_NTH_LABELS = ['1st', '2nd', '3rd', '4th'];
 
 function addUnits(date, amount, unit) {
@@ -135,7 +134,7 @@ async function renderPlansContent(main) {
     <p class="text-muted">Recurring plans — things that repeat like "dinner every 3rd Friday". For recurring chores, use the Recurring chores tab.</p>
     <form id="schedule-form" class="inline-form schedule-form">
       <input name="title" placeholder="Title" required>
-      <select name="assignedTo">${SCHED_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
       <select name="recurrenceKind" id="recurrenceKind">
         <option value="interval">Every N days/weeks/months</option>
         <option value="nthWeekday">Nth weekday of month</option>
@@ -179,7 +178,7 @@ async function renderPlansContent(main) {
     return `
       <form class="item-edit-form" data-edit-form="${s.id}">
         <input name="title" value="${HD_CAL.escapeHtml(s.title)}" required>
-        <select name="assignedTo">${SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === s.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === s.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
         <select name="recurrenceKind" data-edit-kind="${s.id}">
           <option value="interval" ${isInterval ? 'selected' : ''}>Every N days/weeks/months</option>
           <option value="nthWeekday" ${!isInterval ? 'selected' : ''}>Nth weekday of month</option>
@@ -319,5 +318,5 @@ async function renderPlansContent(main) {
 window.HD_SCHEDULING = {
   addUnits, nthWeekdayOfMonth, nextOccurrenceAfter, occurrencesInRange,
   choreNextDue, describeRecurrence, getScheduleItemsInRange, renderPlansContent,
-  SCHED_WEEKDAY_LABELS, SCHED_ASSIGNEES,
+  SCHED_WEEKDAY_LABELS,
 };

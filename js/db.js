@@ -1,8 +1,9 @@
 const DB_NAME = 'home-dashboard';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORES = [
   'events', 'notes', 'shoppingItems', 'homeWork', 'scheduling',
   'maintenanceJobs', 'ideas', 'plants', 'recipes', 'mealPlans', 'photos', 'goals',
+  'completions', 'activities',
 ];
 
 function openDB() {

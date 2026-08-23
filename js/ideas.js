@@ -1,5 +1,3 @@
-const IDEA_ASSIGNEES = ['Both', 'Kasparas', 'Izolda'];
-
 async function renderIdeasTab(main) {
   main.innerHTML = `
     <div class="tab-header"><h2>Ideas</h2><p class="text-muted">Things you might want to do sometime — not tied to a date.</p></div>
@@ -7,7 +5,7 @@ async function renderIdeasTab(main) {
       <input name="title" placeholder="Idea (e.g. Visit the botanical garden)" required>
       <input name="when" placeholder="When (optional, e.g. someday, this weekend)">
       <input name="tags" placeholder="Tags (optional, comma-separated, e.g. outdoor, rainy-day)">
-      <select name="assignedTo">${IDEA_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add idea</button>
     </form>
@@ -22,7 +20,7 @@ async function renderIdeasTab(main) {
         <input name="title" value="${HD_CAL.escapeHtml(i.title)}" required>
         <input name="when" value="${HD_CAL.escapeHtml(i.when || '')}" placeholder="When (optional)">
         <input name="tags" value="${HD_CAL.escapeHtml(i.tags || '')}" placeholder="Tags (optional, comma-separated)">
-        <select name="assignedTo">${IDEA_ASSIGNEES.map((a) => `<option value="${a}" ${a === i.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === i.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(i.notes || '')}</textarea>
         <div class="modal-form-actions">
           <button type="button" data-cancel-edit>Cancel</button>

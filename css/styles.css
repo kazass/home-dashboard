@@ -1403,6 +1403,63 @@ input[type="checkbox"] {
   background: none;
 }
 
+.user-name-input {
+  width: 100px;
+}
+
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.activity-log-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.activity-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.stats-bar-row-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+}
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+  max-width: 320px;
+}
+
+.memory-card {
+  aspect-ratio: 1;
+  font-size: 1.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.memory-card.flipped {
+  background: var(--today-bg);
+}
+
 .person-badge {
   font-weight: 600;
 }

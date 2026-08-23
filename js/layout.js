@@ -1,5 +1,5 @@
 const LAYOUT_KEY = 'hd-layout';
-const DEFAULT_SIDEBAR_ORDER = ['decide', 'trip', 'weather', 'digest', 'goal', 'agenda', 'notesShopping'];
+const DEFAULT_SIDEBAR_ORDER = ['decide', 'trip', 'weather', 'digest', 'goal', 'activities', 'agenda', 'notesShopping'];
 
 let editMode = false;
 

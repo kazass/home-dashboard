@@ -1,4 +1,3 @@
-const RECIPE_RATERS = ['Kasparas', 'Izolda'];
 let recipesSubView = 'recipes';
 
 function recipePhotoSrc(recipe) {
@@ -97,7 +96,7 @@ async function renderRecipeListView(content) {
               <span class="task-title">${HD_CAL.escapeHtml(r.title)}</span>
               ${tags.map((t) => `<span class="badge tag">${HD_CAL.escapeHtml(t)}</span>`).join('')}
             </div>
-            ${RECIPE_RATERS.map((p) => `
+            ${HD_SETTINGS.getUserNames().map((p) => `
               <div class="rating-row">
                 <span class="text-muted">${p}</span>
                 ${starsHtml(r.id, p, (r.ratings || {})[p])}

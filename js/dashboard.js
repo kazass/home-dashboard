@@ -71,7 +71,7 @@ function openEventModal(dateStr, onChange) {
             </label>
             <label>Assigned to
               <select name="assignedTo">
-                ${HD_CAL.ASSIGNEES.map((a) => `<option value="${a}" ${editing && editing.assignedTo === a ? 'selected' : ''}>${a}</option>`).join('')}
+                ${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${editing && editing.assignedTo === a ? 'selected' : ''}>${a}</option>`).join('')}
               </select>
             </label>
             <label>Notes
@@ -301,6 +301,7 @@ const SIDEBAR_CARD_DEFS = {
   },
   digest: { html: '', init: (el) => window.HD_DIGEST && HD_DIGEST.renderWeeklyDigest(el) },
   goal: { html: '', init: (el) => window.HD_GOAL && HD_GOAL.renderGoalCard(el) },
+  activities: { html: '', init: (el) => window.HD_ACTIVITIES && HD_ACTIVITIES.renderActivitiesCard(el) },
   agenda: { html: '', init: (el) => renderAgenda(el) },
   notesShopping: { html: '', init: (el) => renderMiniNotesAndShopping(el) },
 };

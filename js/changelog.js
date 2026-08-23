@@ -1,4 +1,4 @@
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.2.1';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,18 @@ const APP_VERSION = '2.1.4';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.2.1',
+    date: '2026-08-24',
+    notes: [
+      'You can now rename Kasparas/Izolda in Settings → Manage users — renaming updates every existing chore, task, and rating automatically.',
+      'Chores and Home/Work tasks can now have points and build an on-time streak; a new Leaderboard section in the Stats panel shows who\'s ahead.',
+      'Home/Work tasks can now have an optional due date.',
+      'Added an hourly “today\'s status” popup for anything due/overdue, with a Postpone 1/2/3 days option — turn it off in Settings if it\'s too naggy.',
+      'Added an Activities dashboard card for tracking free-form personal habits (workout, read, etc.), with weekly/total counts in the Stats panel.',
+      'Hidden: the version-button easter egg now offers a quick memory-match game.',
+    ],
+  },
   {
     version: '2.1.4',
     date: '2026-08-24',
@@ -176,9 +188,14 @@ function openEasterEggModal() {
       </div>
       <div class="modal-body">
         <p>Built with ❤️ for Kasparas &amp; Izolda. Here's to fewer forgotten chores.</p>
+        <button type="button" id="play-game-btn">🎮 Play a quick game</button>
       </div>
     </div>`;
   overlay.querySelector('#changelog-close-btn').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#play-game-btn').addEventListener('click', () => {
+    overlay.remove();
+    if (window.HD_GAME) HD_GAME.openGameModal();
+  });
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   launchConfetti();
 }

@@ -102,6 +102,7 @@ window.addEventListener('DOMContentLoaded', () => {
   route();
   if (window.HD_SCREENSAVER) window.HD_SCREENSAVER.initScreensaver();
   if (window.HD_STATS) window.HD_STATS.initStatsSwipe();
+  if (window.HD_DAILY_STATUS) window.HD_DAILY_STATUS.initDailyStatusCheck();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(console.error);
   }

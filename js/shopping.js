@@ -1,5 +1,3 @@
-const SHOPPING_ADDED_BY = ['Both', 'Kasparas', 'Izolda'];
-
 async function renderShoppingTab(main) {
   main.innerHTML = `
     <div class="tab-header"><h2>Shopping list</h2></div>
@@ -7,7 +5,7 @@ async function renderShoppingTab(main) {
       <input name="item" placeholder="Item" required>
       <input name="qty" placeholder="Qty (optional)">
       <input name="category" placeholder="Category (optional)">
-      <select name="addedBy">${SHOPPING_ADDED_BY.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="addedBy">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
       <button type="submit">Add</button>
     </form>
     <div class="shopping-toolbar">
