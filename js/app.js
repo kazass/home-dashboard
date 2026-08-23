@@ -17,7 +17,9 @@ function renderNav() {
     + '<button class="nav-btn nav-utility-btn" id="search-nav-btn">🔍 Search</button>'
     + '<button class="nav-btn nav-utility-btn" id="backup-nav-btn">Backup</button>'
     + '<button class="nav-btn nav-utility-btn" id="settings-nav-btn">Settings</button>'
-    + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`;
+    + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`
+    + '<div id="nav-spotify"></div>';
+  updateSpotifyEmbed();
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
     if (!btn) return;
@@ -39,6 +41,16 @@ function renderNav() {
     }
     location.hash = btn.dataset.tab;
   });
+}
+
+function updateSpotifyEmbed() {
+  const holder = document.getElementById('nav-spotify');
+  if (!holder || !window.HD_SETTINGS) return;
+  const raw = HD_SETTINGS.getSettings().spotifyUrl;
+  const embedUrl = HD_SETTINGS.spotifyEmbedUrl(raw);
+  holder.innerHTML = embedUrl
+    ? `<iframe src="${embedUrl}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+    : '<p class="nav-spotify-hint">🎵 Add a Spotify link in Settings</p>';
 }
 
 function renderPlaceholder(tabId) {
@@ -79,6 +91,8 @@ function route() {
   const tabId = location.hash.replace('#', '') || 'dashboard';
   setActive(tabId);
 }
+
+window.HD_APP = { updateSpotifyEmbed };
 
 window.addEventListener('hashchange', route);
 window.addEventListener('DOMContentLoaded', () => {

@@ -1,5 +1,5 @@
 const SETTINGS_KEY = 'hd-settings';
-const DEFAULT_SETTINGS = { idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null };
+const DEFAULT_SETTINGS = { idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '' };
 const IDLE_TIMEOUT_OPTIONS = [1, 2, 3, 5, 10, 15, 30];
 
 const ACCENT_PRESETS = [
@@ -66,6 +66,16 @@ function getShowCompletedOnCalendar() {
   return getSettings().showCompletedOnCalendar;
 }
 
+// Converts a normal open.spotify.com link (playlist/album/track/artist/show/
+// episode, with or without a locale prefix or query string) into its embed
+// form. Returns null if the pasted text isn't recognizable.
+function spotifyEmbedUrl(rawUrl) {
+  if (!rawUrl) return null;
+  const match = rawUrl.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|artist|show|episode)\/([a-zA-Z0-9]+)/);
+  if (!match) return null;
+  return `https://open.spotify.com/embed/${match[1]}/${match[2]}?theme=0`;
+}
+
 // Applies the chosen theme's full palette, then re-applies any manual accent
 // override on top of it (accent picker wins over the theme's own accent).
 function applyAppearance() {
@@ -96,7 +106,7 @@ function openSettingsModal() {
   document.body.appendChild(overlay);
 
   const current = getIdleTimeoutMinutes();
-  const { theme: currentTheme, accentColor: currentAccent } = getSettings();
+  const { theme: currentTheme, accentColor: currentAccent, spotifyUrl: currentSpotify } = getSettings();
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
@@ -135,6 +145,12 @@ function openSettingsModal() {
             <button type="button" class="accent-swatch accent-swatch-reset ${!currentAccent ? 'selected' : ''}" data-accent="" title="Use theme's accent">↺</button>
           </div>
         </div>
+
+        <label class="settings-field">
+          Spotify link
+          <input type="text" id="spotify-url-input" placeholder="Paste a playlist/album/track link from Spotify" value="${HD_CAL.escapeHtml(currentSpotify || '')}">
+        </label>
+        <p class="text-muted" id="spotify-url-status">Shows as a small player at the bottom of the sidebar. This is a plain embed, not tied to the tablet's Spotify account.</p>
       </div>
     </div>`;
 
@@ -160,9 +176,18 @@ function openSettingsModal() {
       overlay.querySelectorAll('[data-accent]').forEach((b) => b.classList.toggle('selected', b === btn));
     });
   });
+  overlay.querySelector('#spotify-url-input').addEventListener('change', (e) => {
+    const raw = e.target.value.trim();
+    const embed = spotifyEmbedUrl(raw);
+    overlay.querySelector('#spotify-url-status').textContent = raw && !embed
+      ? "Couldn't recognize that as a Spotify link — paste a share link from the Spotify app/site."
+      : 'Shows as a small player at the bottom of the sidebar. This is a plain embed, not tied to the tablet\'s Spotify account.';
+    saveSettings({ spotifyUrl: raw });
+    if (window.HD_APP) window.HD_APP.updateSpotifyEmbed();
+  });
 }
 
 window.HD_SETTINGS = {
   getSettings, saveSettings, getIdleTimeoutMinutes, getShowCompletedOnCalendar,
-  applyAppearance, openSettingsModal, THEMES, ACCENT_PRESETS,
+  applyAppearance, openSettingsModal, spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
 };

@@ -1,7 +1,14 @@
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.8.0',
+    date: '2026-08-23',
+    notes: [
+      'Added a Spotify player at the bottom of the sidebar — paste a playlist/album/track link in Settings. Plain embed, not tied to the tablet\'s account.',
+    ],
+  },
   {
     version: '1.7.0',
     date: '2026-08-23',
