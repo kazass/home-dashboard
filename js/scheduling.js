@@ -130,15 +130,11 @@ async function getScheduleItemsInRange(rangeStart, rangeEnd) {
   return items;
 }
 
-async function renderSchedulingTab(main) {
+async function renderPlansContent(main) {
   main.innerHTML = `
-    <div class="tab-header"><h2>Scheduling</h2><p class="text-muted">Recurring plans — chores, or things that repeat like "dinner every 3rd Friday". Chore progress is tracked in the Maintenance tab.</p></div>
+    <p class="text-muted">Recurring plans — things that repeat like "dinner every 3rd Friday". For recurring chores, use the Recurring chores tab.</p>
     <form id="schedule-form" class="inline-form schedule-form">
       <input name="title" placeholder="Title" required>
-      <select name="category">
-        <option value="event">Event / plan</option>
-        <option value="chore">Chore</option>
-      </select>
       <select name="assignedTo">${SCHED_ASSIGNEES.map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
       <select name="recurrenceKind" id="recurrenceKind">
         <option value="interval">Every N days/weeks/months</option>
@@ -183,10 +179,6 @@ async function renderSchedulingTab(main) {
     return `
       <form class="item-edit-form" data-edit-form="${s.id}">
         <input name="title" value="${HD_CAL.escapeHtml(s.title)}" required>
-        <select name="category">
-          <option value="event" ${s.category === 'event' ? 'selected' : ''}>Event / plan</option>
-          <option value="chore" ${s.category === 'chore' ? 'selected' : ''}>Chore</option>
-        </select>
         <select name="assignedTo">${SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === s.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
         <select name="recurrenceKind" data-edit-kind="${s.id}">
           <option value="interval" ${isInterval ? 'selected' : ''}>Every N days/weeks/months</option>
@@ -214,21 +206,20 @@ async function renderSchedulingTab(main) {
   }
 
   async function refresh() {
-    const schedules = await HD_DB.dbGetAll('scheduling');
+    const schedules = (await HD_DB.dbGetAll('scheduling')).filter((s) => s.category !== 'chore');
     schedules.sort((a, b) => a.title.localeCompare(b.title));
 
     listEl.innerHTML = schedules.length
       ? schedules.map((s) => {
         if (s.id === editingId) return editFormHtml(s);
-        const next = s.category === 'chore' ? choreNextDue(s) : nextOccurrenceAfter(s, today);
+        const next = nextOccurrenceAfter(s, today);
         return `
         <div class="task-row" data-id="${s.id}">
           <div class="task-row-main">
             <span class="task-title">${HD_CAL.escapeHtml(s.title)}</span>
-            <span class="badge">${s.category === 'chore' ? 'Chore' : 'Event'}</span>
             <span class="badge">${s.assignedTo || 'Both'}</span>
           </div>
-          <div class="text-muted">${describeRecurrence(s)} — next: ${next ? HD_CAL.ymd(next) : '—'}${s.category === 'chore' ? ` (completed ${s.completedCount || 0}×, manage in Maintenance tab)` : ''}</div>
+          <div class="text-muted">${describeRecurrence(s)} — next: ${next ? HD_CAL.ymd(next) : '—'}</div>
           ${s.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(s.notes)}</div>` : ''}
           <div class="task-actions">
             <button type="button" data-edit="${s.id}">Edit</button>
@@ -236,7 +227,7 @@ async function renderSchedulingTab(main) {
           </div>
         </div>`;
       }).join('')
-      : '<p class="text-muted">No schedules yet.</p>';
+      : '<p class="text-muted">No recurring plans yet.</p>';
 
     listEl.querySelectorAll('[data-delete]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -278,7 +269,6 @@ async function renderSchedulingTab(main) {
         const title = fd.get('title').trim();
         if (!title) return;
         schedule.title = title;
-        schedule.category = fd.get('category');
         schedule.assignedTo = fd.get('assignedTo');
         schedule.recurrenceKind = fd.get('recurrenceKind');
         schedule.intervalCount = Number(fd.get('intervalCount')) || 1;
@@ -303,7 +293,7 @@ async function renderSchedulingTab(main) {
     await HD_DB.dbPut('scheduling', {
       id: crypto.randomUUID(),
       title,
-      category: fd.get('category'),
+      category: 'event',
       assignedTo: fd.get('assignedTo'),
       recurrenceKind,
       intervalCount: Number(fd.get('intervalCount')) || 1,
@@ -328,6 +318,6 @@ async function renderSchedulingTab(main) {
 
 window.HD_SCHEDULING = {
   addUnits, nthWeekdayOfMonth, nextOccurrenceAfter, occurrencesInRange,
-  choreNextDue, describeRecurrence, getScheduleItemsInRange, renderSchedulingTab,
+  choreNextDue, describeRecurrence, getScheduleItemsInRange, renderPlansContent,
   SCHED_WEEKDAY_LABELS, SCHED_ASSIGNEES,
 };

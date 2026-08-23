@@ -66,7 +66,7 @@ async function getCompletedItemsInRange(rangeStart, rangeEnd) {
       if (inRange(d)) {
         items.push({
           id: `done-hw-${t.id}`, title: `✓ ${t.title}`, date: ymd(d),
-          type: 'completed', isCompletedRecord: true, sourceTab: 'Home/Work',
+          type: 'completed', isCompletedRecord: true, sourceTab: 'Tasks',
         });
       }
     }
@@ -92,7 +92,7 @@ async function getCompletedItemsInRange(rangeStart, rangeEnd) {
       if (inRange(d)) {
         items.push({
           id: `done-chore-${c.id}-${ymd(d)}`, title: `✓ ${c.title}`, date: ymd(d),
-          type: 'completed', isCompletedRecord: true, sourceTab: 'Maintenance',
+          type: 'completed', isCompletedRecord: true, sourceTab: 'Tasks',
         });
       }
     }
@@ -119,7 +119,8 @@ async function loadEventsAndHolidays(years, rangeStart, rangeEnd) {
   const plantItems = (rangeStart && rangeEnd && window.HD_GARDEN)
     ? await HD_GARDEN.getPlantWaterItemsInRange(rangeStart, rangeEnd).catch(() => [])
     : [];
-  const completedItems = (rangeStart && rangeEnd)
+  const showCompleted = window.HD_SETTINGS ? HD_SETTINGS.getShowCompletedOnCalendar() : false;
+  const completedItems = (rangeStart && rangeEnd && showCompleted)
     ? await getCompletedItemsInRange(rangeStart, rangeEnd).catch(() => [])
     : [];
   return [...events, ...holidays, ...scheduleItems, ...plantItems, ...completedItems];
@@ -147,9 +148,26 @@ const MONTH_LABELS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+// Chip color is collapsed to a few meaningful groups (event / recurring /
+// holiday / completed) rather than one hue per sub-type, to keep a busy
+// month view readable; the sub-type is still conveyed via a small icon.
+function chipClass(item) {
+  if (item.isHoliday) return 'holiday';
+  if (item.type === 'schedule' || item.type === 'plant') return 'recurring';
+  if (item.type === 'completed') return 'completed';
+  return 'event';
+}
+
+function chipIcon(item) {
+  if (item.type === 'work') return '💼 ';
+  if (item.type === 'trip') return '✈️ ';
+  if (item.type === 'plant') return '💧 ';
+  if (item.type === 'schedule') return item.category === 'chore' ? '🧹 ' : '🔁 ';
+  return '';
+}
+
 function eventChipHtml(item) {
-  const cls = item.isHoliday ? 'holiday' : item.type || 'personal';
-  return `<div class="event-chip ${cls}">${escapeHtml(item.title)}</div>`;
+  return `<div class="event-chip ${chipClass(item)}">${chipIcon(item)}${escapeHtml(item.title)}</div>`;
 }
 
 function escapeHtml(str) {
@@ -286,5 +304,5 @@ function googleCalendarLink(item) {
 window.HD_CAL = {
   ymd, parseYMD, addDays, startOfWeek, monthMatrix, loadEventsAndHolidays,
   getCompletedItemsInRange, groupByDate, renderCalendar, googleCalendarLink, escapeHtml,
-  EVENT_TYPES, ASSIGNEES, CAL_STATE,
+  chipClass, chipIcon, EVENT_TYPES, ASSIGNEES, CAL_STATE,
 };

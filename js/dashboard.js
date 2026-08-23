@@ -44,11 +44,11 @@ function openEventModal(dateStr, onChange) {
             ${dayEvents.length === 0 ? '<p class="text-muted">No events yet.</p>' : dayEvents.map((e) => `
               <div class="event-row">
                 <div class="event-row-main">
-                  <span class="event-dot ${e.isHoliday ? 'holiday' : e.type}"></span>
-                  <span>${HD_CAL.escapeHtml(e.title)}</span>
+                  <span class="event-dot ${HD_CAL.chipClass(e)}"></span>
+                  <span>${HD_CAL.chipIcon(e)}${HD_CAL.escapeHtml(e.title)}</span>
                   <span class="badge">${e.isHoliday ? 'Holiday' : e.isCompletedRecord ? 'Completed' : e.isSchedule ? { chore: 'Chore', plant: 'Watering' }[e.category] || 'Recurring' : (e.assignedTo || 'Both')}</span>
                 </div>
-                ${e.isHoliday || e.isSchedule || e.isCompletedRecord ? (e.isSchedule ? `<div class="text-muted">Manage in the ${e.category === 'plant' ? 'Garden' : 'Scheduling/Maintenance'} tab.</div>` : e.isCompletedRecord ? `<div class="text-muted">See the ${e.sourceTab} tab.</div>` : '') : `
+                ${e.isHoliday || e.isSchedule || e.isCompletedRecord ? (e.isSchedule ? `<div class="text-muted">Manage in the ${e.category === 'plant' ? 'Garden' : 'Tasks'} tab.</div>` : e.isCompletedRecord ? `<div class="text-muted">See the ${e.sourceTab} tab.</div>` : '') : `
                   <div class="event-row-actions">
                     <a href="${HD_CAL.googleCalendarLink(e)}" target="_blank" rel="noopener">Add to Google Cal</a>
                     <button type="button" data-edit="${e.id}">Edit</button>
@@ -214,24 +214,22 @@ async function renderAgenda(container) {
     </div>`;
 }
 
-async function renderMiniNotes(container) {
+async function renderMiniNotesAndShopping(container) {
   const notes = await HD_DB.dbGetAll('notes');
-  const sorted = notes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
-  container.innerHTML = `
-    <h4><a href="#notes" class="mini-link">Notes</a></h4>
-    ${sorted.length
-      ? `<ul class="mini-list">${sorted.map((n) => `<li>${HD_CAL.escapeHtml(n.text.slice(0, 80))}</li>`).join('')}</ul>`
-      : '<p class="text-muted">No notes yet — add some in the Notes tab.</p>'}`;
-}
-
-async function renderMiniShopping(container) {
+  const sortedNotes = notes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
   const items = await HD_DB.dbGetAll('shoppingItems');
   const unchecked = items.filter((i) => !i.checked).slice(0, 5);
+
   container.innerHTML = `
+    <h4><a href="#notes" class="mini-link">Notes</a></h4>
+    ${sortedNotes.length
+      ? `<ul class="mini-list">${sortedNotes.map((n) => `<li>${HD_CAL.escapeHtml(n.text.slice(0, 80))}</li>`).join('')}</ul>`
+      : '<p class="text-muted">No notes yet.</p>'}
+    <hr class="mini-divider">
     <h4><a href="#shopping" class="mini-link">Shopping list</a></h4>
     ${unchecked.length
       ? `<ul class="mini-list">${unchecked.map((i) => `<li>${HD_CAL.escapeHtml(i.item)}</li>`).join('')}</ul>`
-      : '<p class="text-muted">Shopping list is empty — add items in the Shopping tab.</p>'}`;
+      : '<p class="text-muted">Shopping list is empty.</p>'}`;
 }
 
 async function renderDashboardTab(main) {
@@ -247,8 +245,7 @@ async function renderDashboardTab(main) {
           <div id="dash-weather-body"></div>
         </section>
         <section class="card" id="dash-agenda"></section>
-        <section class="card" id="dash-notes"></section>
-        <section class="card" id="dash-shopping"></section>
+        <section class="card" id="dash-notes-shopping"></section>
       </aside>
     </div>`;
 
@@ -267,8 +264,7 @@ async function renderDashboardTab(main) {
   HD_CAL.renderCalendar(calendarEl, onDayClick);
   renderWeatherWidget(document.getElementById('dash-weather-body'));
   renderAgenda(agendaEl);
-  renderMiniNotes(document.getElementById('dash-notes'));
-  renderMiniShopping(document.getElementById('dash-shopping'));
+  renderMiniNotesAndShopping(document.getElementById('dash-notes-shopping'));
 
   document.getElementById('decide-btn').addEventListener('click', () => {
     if (window.HD_DECIDE) HD_DECIDE.openDecideModal();

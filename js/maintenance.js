@@ -1,6 +1,6 @@
-async function renderMaintenanceTab(main) {
+async function renderMaintenanceContent(main) {
   main.innerHTML = `
-    <div class="tab-header"><h2>Maintenance</h2><p class="text-muted">Recurring home chores. Full recurrence editing (e.g. switching to an unusual pattern) lives in the Scheduling tab.</p></div>
+    <p class="text-muted">Recurring home chores.</p>
     <form id="chore-form" class="inline-form">
       <input name="title" placeholder="Chore (e.g. Wash towels)" required>
       <input type="number" name="intervalCount" min="1" value="1" style="width:70px">
@@ -162,4 +162,4 @@ async function renderMaintenanceTab(main) {
   refresh();
 }
 
-window.HD_MAINTENANCE = { renderMaintenanceTab };
+window.HD_MAINTENANCE = { renderMaintenanceContent };

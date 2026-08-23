@@ -7,12 +7,9 @@
   --accent-text: #ffffff;
   --border: #e0ded8;
   --nav-width: 200px;
-  --type-personal: #4f7fc7;
-  --type-work: #b0762f;
-  --type-trip: #a44fb0;
+  --type-event: #4f7fc7;
   --type-holiday: #c74f5c;
-  --type-schedule: #3f9e8f;
-  --type-plant: #5a9c3f;
+  --type-recurring: #3f9e8f;
   --today-bg: rgba(47, 111, 79, 0.12);
 }
 
@@ -279,12 +276,9 @@ html, body {
   white-space: nowrap;
 }
 
-.event-chip.personal { background: var(--type-personal); }
-.event-chip.work { background: var(--type-work); }
-.event-chip.trip { background: var(--type-trip); }
+.event-chip.event { background: var(--type-event); }
 .event-chip.holiday { background: var(--type-holiday); }
-.event-chip.schedule { background: var(--type-schedule); }
-.event-chip.plant { background: var(--type-plant); }
+.event-chip.recurring { background: var(--type-recurring); }
 .event-chip.more { background: transparent; color: var(--text-muted); }
 
 .cal-week-grid {
@@ -339,6 +333,12 @@ html, body {
 .agenda-list, .mini-list {
   margin: 0;
   padding-left: 18px;
+}
+
+.mini-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
 }
 
 .badge {
@@ -466,12 +466,9 @@ html, body {
   display: inline-block;
 }
 
-.event-dot.personal { background: var(--type-personal); }
-.event-dot.work { background: var(--type-work); }
-.event-dot.trip { background: var(--type-trip); }
+.event-dot.event { background: var(--type-event); }
 .event-dot.holiday { background: var(--type-holiday); }
-.event-dot.schedule { background: var(--type-schedule); }
-.event-dot.plant { background: var(--type-plant); }
+.event-dot.recurring { background: var(--type-recurring); }
 
 .event-row-actions {
   display: flex;
@@ -1086,6 +1083,13 @@ input[type="checkbox"] {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
+}
+
+.settings-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 /* Edit forms reused across list tabs */

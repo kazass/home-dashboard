@@ -1,8 +1,8 @@
 const HOMEWORK_ASSIGNEES = ['Both', 'Kasparas', 'Izolda'];
 
-async function renderHomeWorkTab(main) {
+async function renderHomeWorkContent(main) {
   main.innerHTML = `
-    <div class="tab-header"><h2>Home/Work</h2><p class="text-muted">Things around the house that need fixing, cleaning, or doing — not on a repeating schedule.</p></div>
+    <p class="text-muted">One-off things around the house — not on a repeating schedule.</p>
     <form id="homework-form" class="inline-form">
       <input name="title" placeholder="Task (e.g. Fix the fence)" required>
       <input name="when" placeholder="When (optional, e.g. next winter)">
@@ -128,4 +128,4 @@ async function renderHomeWorkTab(main) {
   refresh();
 }
 
-window.HD_HOMEWORK = { renderHomeWorkTab };
+window.HD_HOMEWORK = { renderHomeWorkContent };

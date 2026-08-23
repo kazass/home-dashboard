@@ -1,4 +1,4 @@
-const CACHE_NAME = 'home-dashboard-v13';
+const CACHE_NAME = 'home-dashboard-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const ASSETS = [
   './js/homework.js',
   './js/scheduling.js',
   './js/maintenance.js',
+  './js/tasks.js',
   './js/ideas.js',
   './js/garden.js',
   './js/recipes.js',

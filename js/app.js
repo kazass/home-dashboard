@@ -2,9 +2,7 @@ const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'notes', label: 'Notes' },
   { id: 'shopping', label: 'Shopping' },
-  { id: 'homework', label: 'Home/Work' },
-  { id: 'scheduling', label: 'Scheduling' },
-  { id: 'maintenance', label: 'Maintenance' },
+  { id: 'tasks', label: 'Tasks' },
   { id: 'ideas', label: 'Ideas' },
   { id: 'garden', label: 'Garden' },
   { id: 'recipes', label: 'Recipes' },
@@ -59,12 +57,8 @@ function setActive(tabId) {
     window.HD_NOTES.renderNotesTab(main);
   } else if (tabId === 'shopping' && window.HD_SHOPPING) {
     window.HD_SHOPPING.renderShoppingTab(main);
-  } else if (tabId === 'homework' && window.HD_HOMEWORK) {
-    window.HD_HOMEWORK.renderHomeWorkTab(main);
-  } else if (tabId === 'scheduling' && window.HD_SCHEDULING) {
-    window.HD_SCHEDULING.renderSchedulingTab(main);
-  } else if (tabId === 'maintenance' && window.HD_MAINTENANCE) {
-    window.HD_MAINTENANCE.renderMaintenanceTab(main);
+  } else if (tabId === 'tasks' && window.HD_TASKS) {
+    window.HD_TASKS.renderTasksTab(main);
   } else if (tabId === 'ideas' && window.HD_IDEAS) {
     window.HD_IDEAS.renderIdeasTab(main);
   } else if (tabId === 'garden' && window.HD_GARDEN) {
