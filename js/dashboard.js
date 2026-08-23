@@ -316,6 +316,7 @@ function sidebarCardHtml(id) {
 }
 
 async function renderDashboardTab(main) {
+  if (window.HD_LAYOUT) HD_LAYOUT.resetEditMode();
   const order = window.HD_LAYOUT ? HD_LAYOUT.getSidebarOrder() : Object.keys(SIDEBAR_CARD_DEFS);
 
   main.innerHTML = `

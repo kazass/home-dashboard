@@ -101,6 +101,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderNav();
   route();
   if (window.HD_SCREENSAVER) window.HD_SCREENSAVER.initScreensaver();
+  if (window.HD_STATS) window.HD_STATS.initStatsSwipe();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(console.error);
   }

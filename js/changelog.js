@@ -1,7 +1,19 @@
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.1';
 
 // Newest first. Add one entry here each time a real update ships.
+// Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
+// time bucket. Same hour as the last entry -> bump patch (2.1.1 -> 2.1.2).
+// Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
+// only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.1.1',
+    date: '2026-08-24',
+    notes: [
+      'Fixed "Rearrange boxes" losing sync after leaving and returning to the Dashboard tab.',
+      'Added a swipeable Stats panel (swipe in from the right edge, or tap the 📊 tab) showing chores by person, this month\'s completed tasks/ideas, and chore streaks.',
+    ],
+  },
   {
     version: '2.0.0',
     date: '2026-08-24',

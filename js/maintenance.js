@@ -178,4 +178,4 @@ async function renderMaintenanceContent(main) {
   refresh();
 }
 
-window.HD_MAINTENANCE = { renderMaintenanceContent };
+window.HD_MAINTENANCE = { renderMaintenanceContent, streakHtml };

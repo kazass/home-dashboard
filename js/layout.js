@@ -110,7 +110,17 @@ function toggleEditMode(dashboardEl) {
   return editMode;
 }
 
+// Edit mode is a transient UI state tied to the currently-mounted dashboard
+// DOM. Since main.innerHTML is fully rebuilt on every tab switch, the old
+// grid element (and its CSS class) is discarded — but the module-level
+// `editMode` flag wasn't resetting with it, so returning to the Dashboard
+// could show "Rearrange boxes" while internally still in edit mode (or vice
+// versa), requiring an extra click to recover. Force it off on every mount.
+function resetEditMode() {
+  editMode = false;
+}
+
 window.HD_LAYOUT = {
   getSidebarOrder, saveSidebarOrder, getSize, saveSize, resetLayout,
-  isEditMode, trackResize, enableSidebarDrag, toggleEditMode, DEFAULT_SIDEBAR_ORDER,
+  isEditMode, trackResize, enableSidebarDrag, toggleEditMode, resetEditMode, DEFAULT_SIDEBAR_ORDER,
 };
