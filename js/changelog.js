@@ -1,7 +1,15 @@
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.9.0',
+    date: '2026-08-24',
+    notes: [
+      'Assigned-to badges are now colored per person (set colors in Settings) instead of plain text, everywhere in the app.',
+      'Screensaver can now cycle your own uploaded photos behind the clock — add them in Settings.',
+    ],
+  },
   {
     version: '1.8.0',
     date: '2026-08-23',

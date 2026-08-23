@@ -1045,18 +1045,38 @@ input[type="checkbox"] {
   inset: 0;
   background: #000;
   color: #eceeec;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   z-index: 1000;
   cursor: pointer;
   animation: ambient-fade-in 1.2s ease-in;
+  overflow: hidden;
 }
 
 @keyframes ambient-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+.ambient-photo-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.ambient-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ambient-content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .ambient-clock {
@@ -1113,6 +1133,69 @@ input[type="checkbox"] {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+}
+
+.person-color-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 4px;
+}
+
+.person-color-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.person-color-item input[type="color"] {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+}
+
+.person-badge {
+  font-weight: 600;
+}
+
+.photo-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.photo-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.photo-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--type-holiday);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 0.9rem;
 }
 
 .accent-swatch {

@@ -46,7 +46,7 @@ function openEventModal(dateStr, onChange) {
                 <div class="event-row-main">
                   <span class="event-dot ${HD_CAL.chipClass(e)}"></span>
                   <span>${HD_CAL.chipIcon(e)}${HD_CAL.escapeHtml(e.title)}</span>
-                  <span class="badge">${e.isHoliday ? 'Holiday' : e.isCompletedRecord ? 'Completed' : e.isSchedule ? { chore: 'Chore', plant: 'Watering' }[e.category] || 'Recurring' : (e.assignedTo || 'Both')}</span>
+                  ${e.isHoliday ? '<span class="badge">Holiday</span>' : e.isCompletedRecord ? '<span class="badge">Completed</span>' : e.isSchedule ? `<span class="badge">${{ chore: 'Chore', plant: 'Watering' }[e.category] || 'Recurring'}</span>` : HD_SETTINGS.personBadgeHtml(e.assignedTo)}
                 </div>
                 ${e.isHoliday || e.isSchedule || e.isCompletedRecord ? (e.isSchedule ? `<div class="text-muted">Manage in the ${e.category === 'plant' ? 'Garden' : 'Tasks'} tab.</div>` : e.isCompletedRecord ? `<div class="text-muted">See the ${e.sourceTab} tab.</div>` : '') : `
                   <div class="event-row-actions">
@@ -198,11 +198,11 @@ async function renderAgenda(container) {
     <h4>Agenda</h4>
     <div class="agenda-section">
       <h5>Due today</h5>
-      ${listOrEmpty(dueToday, (e) => `<li>${HD_CAL.escapeHtml(e.title)} <span class="badge">${e.assignedTo || 'Both'}</span></li>`, 'Nothing due today.')}
+      ${listOrEmpty(dueToday, (e) => `<li>${HD_CAL.escapeHtml(e.title)} ${HD_SETTINGS.personBadgeHtml(e.assignedTo)}</li>`, 'Nothing due today.')}
     </div>
     <div class="agenda-section">
       <h5>This week</h5>
-      ${listOrEmpty(dueThisWeek, (e) => `<li>${HD_CAL.escapeHtml(e.title)} <span class="badge">${e.assignedTo || 'Both'}</span></li>`, 'Nothing else this week.')}
+      ${listOrEmpty(dueThisWeek, (e) => `<li>${HD_CAL.escapeHtml(e.title)} ${HD_SETTINGS.personBadgeHtml(e.assignedTo)}</li>`, 'Nothing else this week.')}
     </div>
     <div class="agenda-section">
       <h5>Upcoming holidays</h5>

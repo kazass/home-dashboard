@@ -1,4 +1,5 @@
 const DEFAULT_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // fallback if settings aren't available
+const PHOTO_CYCLE_MS = 8000;
 
 let lastActivity = Date.now();
 
@@ -36,24 +37,47 @@ async function buildWeatherLine() {
   }
 }
 
-function showAmbientOverlay() {
+async function showAmbientOverlay() {
   if (isAmbientShowing()) return;
+  const photos = window.HD_DB ? await HD_DB.dbGetAll('photos').catch(() => []) : [];
+  if (isAmbientShowing()) return; // re-check: something may have shown it during the await above
 
   const overlay = document.createElement('div');
   overlay.id = 'ambient-overlay';
   overlay.innerHTML = `
-    <div class="ambient-clock" id="ambient-clock"></div>
-    <div class="ambient-date" id="ambient-date"></div>
-    <div class="ambient-weather" id="ambient-weather"></div>`;
+    <div class="ambient-photo-bg" id="ambient-photo-bg"></div>
+    <div class="ambient-scrim"></div>
+    <div class="ambient-content">
+      <div class="ambient-clock" id="ambient-clock"></div>
+      <div class="ambient-date" id="ambient-date"></div>
+      <div class="ambient-weather" id="ambient-weather"></div>
+    </div>`;
   document.body.appendChild(overlay);
 
   let clockIntervalId = null;
+  let photoIntervalId = null;
+  let currentPhotoUrl = null;
+  let photoIndex = 0;
+
+  function setPhoto(index) {
+    const bg = overlay.querySelector('#ambient-photo-bg');
+    if (!bg || photos.length === 0) return;
+    if (currentPhotoUrl) URL.revokeObjectURL(currentPhotoUrl);
+    currentPhotoUrl = URL.createObjectURL(photos[index].photoBlob);
+    bg.style.backgroundImage = `url(${currentPhotoUrl})`;
+  }
+
+  function cleanup() {
+    clearInterval(clockIntervalId);
+    if (photoIntervalId) clearInterval(photoIntervalId);
+    if (currentPhotoUrl) URL.revokeObjectURL(currentPhotoUrl);
+  }
 
   function tick() {
     if (!overlay.isConnected) {
       // Overlay was removed by something other than dismiss() below — self-heal
-      // instead of leaking a forever-running interval.
-      clearInterval(clockIntervalId);
+      // instead of leaking intervals or an object URL.
+      cleanup();
       return;
     }
     const now = new Date();
@@ -63,13 +87,24 @@ function showAmbientOverlay() {
   tick();
   clockIntervalId = setInterval(tick, 1000);
 
+  if (photos.length) {
+    setPhoto(0);
+    if (photos.length > 1) {
+      photoIntervalId = setInterval(() => {
+        if (!overlay.isConnected) { clearInterval(photoIntervalId); return; }
+        photoIndex = (photoIndex + 1) % photos.length;
+        setPhoto(photoIndex);
+      }, PHOTO_CYCLE_MS);
+    }
+  }
+
   buildWeatherLine().then((line) => {
     const el = document.getElementById('ambient-weather');
     if (el) el.textContent = line;
   });
 
   function dismiss() {
-    clearInterval(clockIntervalId);
+    cleanup();
     overlay.remove();
     markActivity();
   }

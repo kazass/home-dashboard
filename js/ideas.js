@@ -42,7 +42,7 @@ async function renderIdeasTab(main) {
             <input type="checkbox" data-toggle="${i.id}" ${i.status === 'done' ? 'checked' : ''}>
             <span class="task-title">${HD_CAL.escapeHtml(i.title)}</span>
             ${i.when ? `<span class="badge">${HD_CAL.escapeHtml(i.when)}</span>` : ''}
-            <span class="badge">${i.assignedTo || 'Both'}</span>
+            ${HD_SETTINGS.personBadgeHtml(i.assignedTo)}
             ${(i.tags || '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => `<span class="badge tag">${HD_CAL.escapeHtml(t)}</span>`).join('')}
           </label>
           ${i.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(i.notes)}</div>` : ''}

@@ -40,7 +40,7 @@ async function renderHomeWorkContent(main) {
             <input type="checkbox" data-toggle="${t.id}" ${t.status === 'done' ? 'checked' : ''}>
             <span class="task-title">${HD_CAL.escapeHtml(t.title)}</span>
             ${t.when ? `<span class="badge">${HD_CAL.escapeHtml(t.when)}</span>` : ''}
-            <span class="badge">${t.assignedTo || 'Both'}</span>
+            ${HD_SETTINGS.personBadgeHtml(t.assignedTo)}
           </label>
           ${t.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(t.notes)}</div>` : ''}
           <div class="task-actions">

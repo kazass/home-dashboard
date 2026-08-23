@@ -1,5 +1,8 @@
 const SETTINGS_KEY = 'hd-settings';
-const DEFAULT_SETTINGS = { idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '' };
+const DEFAULT_SETTINGS = {
+  idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '',
+  personColors: { Kasparas: '#4f7fc7', Izolda: '#c74f8f' },
+};
 const IDLE_TIMEOUT_OPTIONS = [1, 2, 3, 5, 10, 15, 30];
 
 const ACCENT_PRESETS = [
@@ -66,6 +69,19 @@ function getShowCompletedOnCalendar() {
   return getSettings().showCompletedOnCalendar;
 }
 
+function getPersonColor(name) {
+  return getSettings().personColors[name] || null;
+}
+
+// Shared badge renderer so "assigned to" shows as a colored chip for
+// Kasparas/Izolda everywhere in the app, instead of plain text.
+function personBadgeHtml(name) {
+  const label = name || 'Both';
+  const color = getPersonColor(label);
+  if (!color) return `<span class="badge">${label}</span>`;
+  return `<span class="badge person-badge" style="background:${color}26;color:${color};border:1px solid ${color}66">${label}</span>`;
+}
+
 // Converts a normal open.spotify.com link (playlist/album/track/artist/show/
 // episode, with or without a locale prefix or query string) into its embed
 // form. Returns null if the pasted text isn't recognizable.
@@ -122,6 +138,12 @@ function openSettingsModal() {
         </label>
         <p class="text-muted">How long the tablet sits untouched before the clock/weather screensaver takes over.</p>
 
+        <div class="settings-field">
+          Screensaver photos <span class="text-muted">(shown behind the clock, cycling every few seconds)</span>
+          <input type="file" id="photo-upload-input" accept="image/*" multiple>
+          <div id="photo-thumbs" class="photo-thumbs"><p class="text-muted">Loading…</p></div>
+        </div>
+
         <label class="settings-field settings-checkbox">
           <input type="checkbox" id="show-completed-checkbox" ${getShowCompletedOnCalendar() ? 'checked' : ''}>
           Show completed items on the calendar grid
@@ -143,6 +165,17 @@ function openSettingsModal() {
           <div class="accent-swatches">
             ${ACCENT_PRESETS.map((p) => `<button type="button" class="accent-swatch ${p.color === currentAccent ? 'selected' : ''}" data-accent="${p.color}" style="background:${p.color}" title="${p.name}"></button>`).join('')}
             <button type="button" class="accent-swatch accent-swatch-reset ${!currentAccent ? 'selected' : ''}" data-accent="" title="Use theme's accent">↺</button>
+          </div>
+        </div>
+
+        <div class="settings-field">
+          Person colors
+          <div class="person-color-row">
+            ${Object.keys(DEFAULT_SETTINGS.personColors).map((name) => `
+              <label class="person-color-item">
+                <input type="color" data-person-color="${name}" value="${getPersonColor(name)}">
+                ${name}
+              </label>`).join('')}
           </div>
         </div>
 
@@ -176,6 +209,12 @@ function openSettingsModal() {
       overlay.querySelectorAll('[data-accent]').forEach((b) => b.classList.toggle('selected', b === btn));
     });
   });
+  overlay.querySelectorAll('[data-person-color]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const personColors = { ...getSettings().personColors, [input.dataset.personColor]: input.value };
+      saveSettings({ personColors });
+    });
+  });
   overlay.querySelector('#spotify-url-input').addEventListener('change', (e) => {
     const raw = e.target.value.trim();
     const embed = spotifyEmbedUrl(raw);
@@ -185,9 +224,41 @@ function openSettingsModal() {
     saveSettings({ spotifyUrl: raw });
     if (window.HD_APP) window.HD_APP.updateSpotifyEmbed();
   });
+
+  async function refreshPhotoThumbs() {
+    const photos = await HD_DB.dbGetAll('photos');
+    const thumbsEl = overlay.querySelector('#photo-thumbs');
+    if (!thumbsEl) return;
+    thumbsEl.innerHTML = photos.length
+      ? photos.map((p) => `
+        <div class="photo-thumb" data-id="${p.id}">
+          <img src="${URL.createObjectURL(p.photoBlob)}" alt="">
+          <button type="button" data-delete-photo="${p.id}" aria-label="Delete">&times;</button>
+        </div>`).join('')
+      : '<p class="text-muted">No photos yet — add some for the screensaver to cycle through.</p>';
+    thumbsEl.querySelectorAll('[data-delete-photo]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        await HD_DB.dbDelete('photos', btn.dataset.deletePhoto);
+        refreshPhotoThumbs();
+      });
+    });
+  }
+
+  overlay.querySelector('#photo-upload-input').addEventListener('change', async (e) => {
+    const files = [...e.target.files];
+    for (const file of files) {
+      const photoBlob = await HD_GARDEN.compressImage(file, 1600, 0.82);
+      await HD_DB.dbPut('photos', { id: crypto.randomUUID(), photoBlob, createdAt: Date.now() });
+    }
+    e.target.value = '';
+    refreshPhotoThumbs();
+  });
+
+  refreshPhotoThumbs();
 }
 
 window.HD_SETTINGS = {
   getSettings, saveSettings, getIdleTimeoutMinutes, getShowCompletedOnCalendar,
-  applyAppearance, openSettingsModal, spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
+  getPersonColor, personBadgeHtml, applyAppearance, openSettingsModal,
+  spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
 };

@@ -64,7 +64,7 @@ async function renderMaintenanceContent(main) {
           <div class="task-row" data-id="${c.id}">
             <div class="task-row-main">
               <span class="task-title">${HD_CAL.escapeHtml(c.title)}</span>
-              <span class="badge">${c.assignedTo || 'Both'}${c.rotate ? ' 🔁' : ''}</span>
+              ${HD_SETTINGS.personBadgeHtml(c.assignedTo)}${c.rotate ? ' 🔁' : ''}
               <span class="text-muted">${HD_SCHEDULING.describeRecurrence(c)}</span>
               ${dueBadge(due)}
             </div>

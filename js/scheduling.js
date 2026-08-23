@@ -217,7 +217,7 @@ async function renderPlansContent(main) {
         <div class="task-row" data-id="${s.id}">
           <div class="task-row-main">
             <span class="task-title">${HD_CAL.escapeHtml(s.title)}</span>
-            <span class="badge">${s.assignedTo || 'Both'}</span>
+            ${HD_SETTINGS.personBadgeHtml(s.assignedTo)}
           </div>
           <div class="text-muted">${describeRecurrence(s)} — next: ${next ? HD_CAL.ymd(next) : '—'}</div>
           ${s.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(s.notes)}</div>` : ''}
