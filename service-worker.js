@@ -1,4 +1,4 @@
-const CACHE_NAME = 'home-dashboard-v18';
+const CACHE_NAME = 'home-dashboard-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,9 @@ const ASSETS = [
   './js/decide.js',
   './js/changelog.js',
   './js/settings.js',
+  './js/layout.js',
+  './js/digest.js',
+  './js/goal.js',
   './js/screensaver.js',
   './manifest.json',
   './icons/icon.svg',

@@ -182,7 +182,43 @@ async function renderCalendar(container, onDayClick) {
   let years;
   let rangeItems;
 
-  if (CAL_STATE.mode === 'month') {
+  if (CAL_STATE.mode === 'list') {
+    const rangeStart = startOfWeek(CAL_STATE.refDate);
+    const rangeEnd = addDays(rangeStart, 29);
+    years = new Set([rangeStart.getFullYear(), rangeEnd.getFullYear()]);
+    const items = await loadEventsAndHolidays(years, rangeStart, rangeEnd);
+    const byDate = groupByDate(items);
+
+    const header = `
+      <div class="cal-toolbar">
+        <div class="cal-toolbar-nav">
+          <button class="cal-nav-btn" data-nav="prev">&lt;</button>
+          <h3>Next 30 days from ${MONTH_LABELS[rangeStart.getMonth()]} ${rangeStart.getDate()}</h3>
+          <button class="cal-nav-btn" data-nav="next">&gt;</button>
+        </div>
+        <div class="cal-toolbar-modes">
+          <button class="cal-mode-btn" data-mode="month">Month</button>
+          <button class="cal-mode-btn" data-mode="week">Week</button>
+          <button class="cal-mode-btn active" data-mode="list">List</button>
+          <button class="cal-nav-btn" data-nav="today">Today</button>
+        </div>
+      </div>`;
+
+    const days = Array.from({ length: 30 }, (_, i) => addDays(rangeStart, i));
+    const rows = days.map((day) => {
+      const key = ymd(day);
+      const dayItems = byDate.get(key) || [];
+      if (dayItems.length === 0) return '';
+      const isToday = key === todayKey;
+      return `
+        <div class="cal-list-row ${isToday ? 'today' : ''}" data-date="${key}">
+          <div class="cal-list-row-date">${WEEKDAY_LABELS[(day.getDay() + 6) % 7]} ${MONTH_LABELS[day.getMonth()].slice(0, 3)} ${day.getDate()}</div>
+          <div class="cal-list-row-events">${dayItems.map(eventChipHtml).join('')}</div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = header + `<div class="cal-list">${rows || '<p class="text-muted">Nothing in the next 30 days.</p>'}</div>`;
+  } else if (CAL_STATE.mode === 'month') {
     const year = CAL_STATE.refDate.getFullYear();
     const month = CAL_STATE.refDate.getMonth();
     const weeks = monthMatrix(year, month);
@@ -200,6 +236,7 @@ async function renderCalendar(container, onDayClick) {
         <div class="cal-toolbar-modes">
           <button class="cal-mode-btn active" data-mode="month">Month</button>
           <button class="cal-mode-btn" data-mode="week">Week</button>
+          <button class="cal-mode-btn" data-mode="list">List</button>
           <button class="cal-nav-btn" data-nav="today">Today</button>
         </div>
       </div>`;
@@ -241,6 +278,7 @@ async function renderCalendar(container, onDayClick) {
         <div class="cal-toolbar-modes">
           <button class="cal-mode-btn" data-mode="month">Month</button>
           <button class="cal-mode-btn active" data-mode="week">Week</button>
+          <button class="cal-mode-btn" data-mode="list">List</button>
           <button class="cal-nav-btn" data-nav="today">Today</button>
         </div>
       </div>`;

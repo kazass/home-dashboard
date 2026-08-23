@@ -1,3 +1,9 @@
+function streakHtml(count) {
+  const filled = Math.min(5, count);
+  const stars = Array.from({ length: 5 }, (_, i) => `<span class="streak-star ${i < filled ? 'filled' : ''}">★</span>`).join('');
+  return `<span class="streak-stars">${stars}</span>`;
+}
+
 async function renderMaintenanceContent(main) {
   main.innerHTML = `
     <p class="text-muted">Recurring home chores.</p>
@@ -68,7 +74,10 @@ async function renderMaintenanceContent(main) {
               <span class="text-muted">${HD_SCHEDULING.describeRecurrence(c)}</span>
               ${dueBadge(due)}
             </div>
-            <div class="text-muted">Completed ${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''}</div>
+            <div class="streak-row">
+              ${streakHtml(c.completedCount || 0)}
+              <span class="text-muted">${c.completedCount || 0}×${c.lastDoneAt ? ' — last done ' + new Date(c.lastDoneAt).toLocaleDateString() : ''}</span>
+            </div>
             ${c.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(c.notes)}</div>` : ''}
             <div class="task-actions">
               <button type="button" data-done="${c.id}">Mark done</button>

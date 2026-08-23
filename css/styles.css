@@ -44,6 +44,8 @@ html, body {
 
 #nav {
   width: var(--nav-width);
+  min-width: 140px;
+  max-width: 400px;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -52,6 +54,7 @@ html, body {
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
+  resize: horizontal;
 }
 
 .nav-btn {
@@ -165,14 +168,35 @@ html, body {
 }
 
 /* Dashboard layout */
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+#edit-layout-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: 2.2fr 1fr;
+  display: flex;
   gap: 16px;
-  align-items: start;
+  align-items: flex-start;
+}
+
+.dashboard-calendar {
+  flex: 2.2 1 0;
+  min-width: 320px;
 }
 
 .dashboard-side {
+  flex: 1 1 0;
+  min-width: 260px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -183,15 +207,53 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  position: relative;
 }
 
 .card h4 {
   margin: 0 0 10px;
 }
 
+.drag-handle {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  touch-action: none;
+  padding: 4px;
+}
+
+.layout-edit-mode .drag-handle {
+  display: inline-block;
+}
+
+.layout-edit-mode .dashboard-side > .card[data-card-id] {
+  resize: vertical;
+  overflow: auto;
+  border: 1px dashed var(--accent);
+}
+
+.layout-edit-mode .dashboard-calendar {
+  resize: horizontal;
+  overflow: auto;
+  flex: none;
+  border: 1px dashed var(--accent);
+}
+
+.card.dragging {
+  opacity: 0.5;
+}
+
 @media (max-width: 1000px) {
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .layout-edit-mode .dashboard-calendar {
+    resize: vertical;
   }
 }
 
@@ -332,6 +394,42 @@ html, body {
 .cal-week-empty {
   color: var(--text-muted);
   text-align: center;
+}
+
+.cal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.cal-list-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cal-list-row.today {
+  background: var(--today-bg);
+  border-color: var(--accent);
+}
+
+.cal-list-row-date {
+  flex-shrink: 0;
+  width: 90px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.cal-list-row-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 /* Agenda / mini widgets */
@@ -787,6 +885,53 @@ html, body {
   color: var(--accent);
 }
 
+.streak-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.streak-stars {
+  display: inline-flex;
+}
+
+.streak-star {
+  color: var(--border);
+  font-size: 0.95rem;
+}
+
+.streak-star.filled {
+  color: #e0a94f;
+}
+
+.goal-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.goal-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.goal-bar-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.goal-edit-btn {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
 /* Garden */
 .plant-grid {
   display: grid;
@@ -1133,6 +1278,17 @@ input[type="checkbox"] {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+}
+
+#reset-layout-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+  width: fit-content;
 }
 
 .person-color-row {

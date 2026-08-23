@@ -1,7 +1,19 @@
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '2.0.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '2.0.0',
+    date: '2026-08-24',
+    notes: [
+      'Dashboard boxes (calendar, weather, agenda, etc.) can now be rearranged and resized — tap "Rearrange boxes" to drag/resize, reset anytime in Settings. The nav sidebar is resizable too.',
+      'Chore progress now shows as a 5-star row instead of a plain count.',
+      'Added a List view to the calendar (30-day agenda-style scroll) alongside Month/Week.',
+      'Added a "This week" digest card summarizing chores/trips/tasks due.',
+      'Added a freeform family goal tracker card with a progress bar.',
+      'Backup now includes a one-way "Export calendar (.ics)" for importing events into Google/Apple/Outlook calendar.',
+    ],
+  },
   {
     version: '1.9.0',
     date: '2026-08-24',

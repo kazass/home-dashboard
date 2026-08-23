@@ -169,6 +169,11 @@ function openSettingsModal() {
         </div>
 
         <div class="settings-field">
+          Dashboard layout
+          <button type="button" id="reset-layout-btn">Reset box positions &amp; sizes</button>
+        </div>
+
+        <div class="settings-field">
           Person colors
           <div class="person-color-row">
             ${Object.keys(DEFAULT_SETTINGS.personColors).map((name) => `
@@ -214,6 +219,11 @@ function openSettingsModal() {
       const personColors = { ...getSettings().personColors, [input.dataset.personColor]: input.value };
       saveSettings({ personColors });
     });
+  });
+  overlay.querySelector('#reset-layout-btn').addEventListener('click', () => {
+    if (window.HD_LAYOUT) HD_LAYOUT.resetLayout();
+    overlay.remove();
+    location.reload();
   });
   overlay.querySelector('#spotify-url-input').addEventListener('change', (e) => {
     const raw = e.target.value.trim();

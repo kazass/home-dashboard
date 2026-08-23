@@ -286,31 +286,69 @@ async function renderTripCountdown(container) {
   tripCountdownIntervalId = setInterval(tick, 1000);
 }
 
+const SIDEBAR_CARD_DEFS = {
+  decide: {
+    html: '<button type="button" id="decide-btn" class="decide-launch-btn">🎲 Help me decide</button>',
+    className: 'decide-card',
+    init: () => document.getElementById('decide-btn').addEventListener('click', () => {
+      if (window.HD_DECIDE) HD_DECIDE.openDecideModal();
+    }),
+  },
+  trip: { html: '', init: (el) => renderTripCountdown(el) },
+  weather: {
+    html: '<h4>Weather</h4><div id="dash-weather-body"></div>',
+    init: () => renderWeatherWidget(document.getElementById('dash-weather-body')),
+  },
+  digest: { html: '', init: (el) => window.HD_DIGEST && HD_DIGEST.renderWeeklyDigest(el) },
+  goal: { html: '', init: (el) => window.HD_GOAL && HD_GOAL.renderGoalCard(el) },
+  agenda: { html: '', init: (el) => renderAgenda(el) },
+  notesShopping: { html: '', init: (el) => renderMiniNotesAndShopping(el) },
+};
+
+function sidebarCardHtml(id) {
+  const def = SIDEBAR_CARD_DEFS[id];
+  if (!def) return '';
+  return `
+    <section class="card ${def.className || ''}" data-card-id="${id}">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <div class="card-content">${def.html}</div>
+    </section>`;
+}
+
 async function renderDashboardTab(main) {
+  const order = window.HD_LAYOUT ? HD_LAYOUT.getSidebarOrder() : Object.keys(SIDEBAR_CARD_DEFS);
+
   main.innerHTML = `
-    <div class="dashboard-grid">
-      <section class="dashboard-calendar card" id="dash-calendar"></section>
-      <aside class="dashboard-side">
-        <section class="card decide-card">
-          <button type="button" id="decide-btn" class="decide-launch-btn">🎲 Help me decide</button>
-        </section>
-        <section class="card" id="dash-trip-countdown"></section>
-        <section class="card" id="dash-weather-card">
-          <h4>Weather</h4>
-          <div id="dash-weather-body"></div>
-        </section>
-        <section class="card" id="dash-agenda"></section>
-        <section class="card" id="dash-notes-shopping"></section>
+    <div class="dashboard-toolbar">
+      <button type="button" id="edit-layout-btn">✥ Rearrange boxes</button>
+    </div>
+    <div class="dashboard-grid" id="dashboard-grid">
+      <section class="dashboard-calendar card" id="dash-calendar" data-card-id="calendar"></section>
+      <aside class="dashboard-side" id="dashboard-side">
+        ${order.map(sidebarCardHtml).join('')}
       </aside>
     </div>`;
 
   const calendarEl = document.getElementById('dash-calendar');
-  const agendaEl = document.getElementById('dash-agenda');
+  const sideEl = document.getElementById('dashboard-side');
+  const gridEl = document.getElementById('dashboard-grid');
+
+  document.getElementById('edit-layout-btn').addEventListener('click', (ev) => {
+    const on = window.HD_LAYOUT ? HD_LAYOUT.toggleEditMode(gridEl) : false;
+    ev.target.textContent = on ? '✓ Done rearranging' : '✥ Rearrange boxes';
+  });
+
+  function cardContent(id) {
+    const card = sideEl.querySelector(`[data-card-id="${id}"]`);
+    return card ? card.querySelector('.card-content') : null;
+  }
 
   function refreshAll() {
     HD_CAL.renderCalendar(calendarEl, onDayClick);
-    renderAgenda(agendaEl);
-    renderTripCountdown(document.getElementById('dash-trip-countdown'));
+    const agendaContent = cardContent('agenda');
+    if (agendaContent) renderAgenda(agendaContent);
+    const tripContent = cardContent('trip');
+    if (tripContent) renderTripCountdown(tripContent);
   }
 
   function onDayClick(dateStr) {
@@ -318,14 +356,18 @@ async function renderDashboardTab(main) {
   }
 
   HD_CAL.renderCalendar(calendarEl, onDayClick);
-  renderTripCountdown(document.getElementById('dash-trip-countdown'));
-  renderWeatherWidget(document.getElementById('dash-weather-body'));
-  renderAgenda(agendaEl);
-  renderMiniNotesAndShopping(document.getElementById('dash-notes-shopping'));
 
-  document.getElementById('decide-btn').addEventListener('click', () => {
-    if (window.HD_DECIDE) HD_DECIDE.openDecideModal();
+  order.forEach((id) => {
+    const def = SIDEBAR_CARD_DEFS[id];
+    const el = cardContent(id);
+    if (def && el) def.init(el);
   });
+
+  if (window.HD_LAYOUT) {
+    HD_LAYOUT.trackResize(calendarEl, 'calendar');
+    sideEl.querySelectorAll('.card[data-card-id]').forEach((el) => HD_LAYOUT.trackResize(el, el.dataset.cardId));
+    HD_LAYOUT.enableSidebarDrag(sideEl, (newOrder) => HD_LAYOUT.saveSidebarOrder(newOrder));
+  }
 }
 
 window.HD_DASHBOARD = { renderDashboardTab };

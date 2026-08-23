@@ -20,6 +20,7 @@ function renderNav() {
     + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`
     + '<div id="nav-spotify"></div>';
   updateSpotifyEmbed();
+  if (window.HD_LAYOUT) HD_LAYOUT.trackResize(nav, 'nav');
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
     if (!btn) return;
