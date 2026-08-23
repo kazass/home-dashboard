@@ -1,7 +1,17 @@
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.5.0',
+    date: '2026-08-23',
+    notes: [
+      'Merged Home/Work, Scheduling, and Maintenance into one Tasks tab (To-do / Recurring chores / Recurring plans) — 7 tabs instead of 9.',
+      'Simplified calendar chip colors from 7 to 3, using icons for sub-type instead.',
+      'Completed-item chips on the calendar grid are now a Settings toggle (off by default); the day popup still always shows them.',
+      'Merged the Notes and Shopping dashboard previews into one card.',
+    ],
+  },
   {
     version: '1.4.0',
     date: '2026-08-23',
