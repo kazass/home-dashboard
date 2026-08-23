@@ -208,6 +208,7 @@ html, body {
   border-radius: 12px;
   padding: 16px;
   position: relative;
+  overflow: auto;
 }
 
 .card h4 {

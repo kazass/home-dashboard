@@ -1,4 +1,4 @@
-const APP_VERSION = '2.1.1';
+const APP_VERSION = '2.1.2';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,13 @@ const APP_VERSION = '2.1.1';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.1.2',
+    date: '2026-08-24',
+    notes: [
+      'Fixed dashboard sidebar cards visually overlapping when a card\'s saved size was smaller than its content — cards now scroll internally instead of bleeding onto the cards below.',
+    ],
+  },
   {
     version: '2.1.1',
     date: '2026-08-24',
