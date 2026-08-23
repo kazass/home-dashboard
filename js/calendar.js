@@ -53,6 +53,54 @@ function monthMatrix(year, month) {
   return weeks;
 }
 
+// Completed tasks/ideas/chores show up as a read-only checkmark chip on the
+// day they were finished, so the calendar also reads as a light activity log.
+async function getCompletedItemsInRange(rangeStart, rangeEnd) {
+  const items = [];
+  const inRange = (d) => d >= rangeStart && d <= rangeEnd;
+
+  const homeWork = await HD_DB.dbGetAll('homeWork');
+  for (const t of homeWork) {
+    if (t.status === 'done' && t.completedAt) {
+      const d = new Date(t.completedAt);
+      if (inRange(d)) {
+        items.push({
+          id: `done-hw-${t.id}`, title: `✓ ${t.title}`, date: ymd(d),
+          type: 'completed', isCompletedRecord: true, sourceTab: 'Home/Work',
+        });
+      }
+    }
+  }
+
+  const ideas = await HD_DB.dbGetAll('ideas');
+  for (const i of ideas) {
+    if (i.status === 'done' && i.completedAt) {
+      const d = new Date(i.completedAt);
+      if (inRange(d)) {
+        items.push({
+          id: `done-idea-${i.id}`, title: `✓ ${i.title}`, date: ymd(d),
+          type: 'completed', isCompletedRecord: true, sourceTab: 'Ideas',
+        });
+      }
+    }
+  }
+
+  const schedules = await HD_DB.dbGetAll('scheduling');
+  for (const c of schedules) {
+    if (c.category === 'chore' && c.lastDoneAt) {
+      const d = new Date(c.lastDoneAt);
+      if (inRange(d)) {
+        items.push({
+          id: `done-chore-${c.id}-${ymd(d)}`, title: `✓ ${c.title}`, date: ymd(d),
+          type: 'completed', isCompletedRecord: true, sourceTab: 'Maintenance',
+        });
+      }
+    }
+  }
+
+  return items;
+}
+
 async function loadEventsAndHolidays(years, rangeStart, rangeEnd) {
   const events = await HD_DB.dbGetAll('events');
   const holidayLists = await Promise.all(
@@ -71,7 +119,10 @@ async function loadEventsAndHolidays(years, rangeStart, rangeEnd) {
   const plantItems = (rangeStart && rangeEnd && window.HD_GARDEN)
     ? await HD_GARDEN.getPlantWaterItemsInRange(rangeStart, rangeEnd).catch(() => [])
     : [];
-  return [...events, ...holidays, ...scheduleItems, ...plantItems];
+  const completedItems = (rangeStart && rangeEnd)
+    ? await getCompletedItemsInRange(rangeStart, rangeEnd).catch(() => [])
+    : [];
+  return [...events, ...holidays, ...scheduleItems, ...plantItems, ...completedItems];
 }
 
 function groupByDate(items) {
@@ -234,6 +285,6 @@ function googleCalendarLink(item) {
 
 window.HD_CAL = {
   ymd, parseYMD, addDays, startOfWeek, monthMatrix, loadEventsAndHolidays,
-  groupByDate, renderCalendar, googleCalendarLink, escapeHtml,
+  getCompletedItemsInRange, groupByDate, renderCalendar, googleCalendarLink, escapeHtml,
   EVENT_TYPES, ASSIGNEES, CAL_STATE,
 };

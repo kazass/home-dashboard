@@ -17,12 +17,17 @@ function renderNav() {
     `<button class="nav-btn" data-tab="${t.id}">${t.label}</button>`
   ).join('')
     + '<button class="nav-btn nav-utility-btn" id="backup-nav-btn">Backup</button>'
+    + '<button class="nav-btn nav-utility-btn" id="settings-nav-btn">Settings</button>'
     + `<button class="nav-btn nav-utility-btn nav-version-btn" id="version-nav-btn">v${version}</button>`;
   nav.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-btn');
     if (!btn) return;
     if (btn.id === 'backup-nav-btn') {
       if (window.HD_BACKUP) window.HD_BACKUP.openBackupModal();
+      return;
+    }
+    if (btn.id === 'settings-nav-btn') {
+      if (window.HD_SETTINGS) window.HD_SETTINGS.openSettingsModal();
       return;
     }
     if (btn.id === 'version-nav-btn') {

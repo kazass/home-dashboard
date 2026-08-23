@@ -26,6 +26,29 @@ async function renderMaintenanceTab(main) {
     return `<span class="task-due">Due in ${diffDays}d</span>`;
   }
 
+  let editingId = null;
+
+  function editFormHtml(c) {
+    return `
+      <form class="item-edit-form" data-edit-form="${c.id}">
+        <input name="title" value="${HD_CAL.escapeHtml(c.title)}" required>
+        <div class="recurrence-fields">
+          <input type="number" name="intervalCount" min="1" value="${c.intervalCount}" style="width:70px">
+          <select name="intervalUnit">
+            <option value="days" ${c.intervalUnit === 'days' ? 'selected' : ''}>Days</option>
+            <option value="weeks" ${c.intervalUnit === 'weeks' ? 'selected' : ''}>Weeks</option>
+            <option value="months" ${c.intervalUnit === 'months' ? 'selected' : ''}>Months</option>
+          </select>
+        </div>
+        <select name="assignedTo">${HD_SCHEDULING.SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === c.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(c.notes || '')}</textarea>
+        <div class="modal-form-actions">
+          <button type="button" data-cancel-edit>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>`;
+  }
+
   async function refresh() {
     const all = await HD_DB.dbGetAll('scheduling');
     const chores = all.filter((s) => s.category === 'chore');
@@ -33,6 +56,7 @@ async function renderMaintenanceTab(main) {
 
     listEl.innerHTML = chores.length
       ? chores.map((c) => {
+        if (c.id === editingId) return editFormHtml(c);
         const due = HD_SCHEDULING.choreNextDue(c);
         return `
           <div class="task-row" data-id="${c.id}">
@@ -46,6 +70,7 @@ async function renderMaintenanceTab(main) {
             ${c.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(c.notes)}</div>` : ''}
             <div class="task-actions">
               <button type="button" data-done="${c.id}">Mark done</button>
+              <button type="button" data-edit="${c.id}">Edit</button>
               <button type="button" data-delete="${c.id}">Delete</button>
             </div>
           </div>`;
@@ -54,6 +79,7 @@ async function renderMaintenanceTab(main) {
 
     listEl.querySelectorAll('[data-done]').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        btn.disabled = true;
         const chore = chores.find((c) => c.id === btn.dataset.done);
         const doneAt = new Date();
         doneAt.setHours(0, 0, 0, 0);
@@ -68,6 +94,39 @@ async function renderMaintenanceTab(main) {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this chore?')) return;
         await HD_DB.dbDelete('scheduling', btn.dataset.delete);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.edit;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-cancel-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = form.dataset.editForm;
+        const chore = chores.find((c) => c.id === id);
+        const fd = new FormData(form);
+        const title = fd.get('title').trim();
+        if (!title) return;
+        chore.title = title;
+        chore.intervalCount = Number(fd.get('intervalCount')) || 1;
+        chore.intervalUnit = fd.get('intervalUnit');
+        chore.assignedTo = fd.get('assignedTo');
+        chore.notes = fd.get('notes').trim();
+        await HD_DB.dbPut('scheduling', chore);
+        editingId = null;
         refresh();
       });
     });

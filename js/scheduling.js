@@ -176,6 +176,42 @@ async function renderSchedulingTab(main) {
   });
 
   const listEl = document.getElementById('schedule-list');
+  let editingId = null;
+
+  function editFormHtml(s) {
+    const isInterval = s.recurrenceKind === 'interval';
+    return `
+      <form class="item-edit-form" data-edit-form="${s.id}">
+        <input name="title" value="${HD_CAL.escapeHtml(s.title)}" required>
+        <select name="category">
+          <option value="event" ${s.category === 'event' ? 'selected' : ''}>Event / plan</option>
+          <option value="chore" ${s.category === 'chore' ? 'selected' : ''}>Chore</option>
+        </select>
+        <select name="assignedTo">${SCHED_ASSIGNEES.map((a) => `<option value="${a}" ${a === s.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="recurrenceKind" data-edit-kind="${s.id}">
+          <option value="interval" ${isInterval ? 'selected' : ''}>Every N days/weeks/months</option>
+          <option value="nthWeekday" ${!isInterval ? 'selected' : ''}>Nth weekday of month</option>
+        </select>
+        <div class="recurrence-fields" data-edit-interval-fields="${s.id}" ${isInterval ? '' : 'hidden'}>
+          <input type="number" name="intervalCount" min="1" value="${s.intervalCount}" style="width:70px">
+          <select name="intervalUnit">
+            <option value="days" ${s.intervalUnit === 'days' ? 'selected' : ''}>Days</option>
+            <option value="weeks" ${s.intervalUnit === 'weeks' ? 'selected' : ''}>Weeks</option>
+            <option value="months" ${s.intervalUnit === 'months' ? 'selected' : ''}>Months</option>
+          </select>
+        </div>
+        <div class="recurrence-fields" data-edit-nth-fields="${s.id}" ${isInterval ? 'hidden' : ''}>
+          <select name="nth">${SCHED_NTH_LABELS.map((l, i) => `<option value="${i + 1}" ${s.nth === i + 1 ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          <select name="weekday">${SCHED_WEEKDAY_LABELS.map((w, i) => `<option value="${i}" ${s.weekday === i ? 'selected' : ''}>${w}</option>`).join('')}</select>
+        </div>
+        <label>Starting <input type="date" name="anchorDate" value="${s.anchorDate}" required></label>
+        <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(s.notes || '')}</textarea>
+        <div class="modal-form-actions">
+          <button type="button" data-cancel-edit>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>`;
+  }
 
   async function refresh() {
     const schedules = await HD_DB.dbGetAll('scheduling');
@@ -183,6 +219,7 @@ async function renderSchedulingTab(main) {
 
     listEl.innerHTML = schedules.length
       ? schedules.map((s) => {
+        if (s.id === editingId) return editFormHtml(s);
         const next = s.category === 'chore' ? choreNextDue(s) : nextOccurrenceAfter(s, today);
         return `
         <div class="task-row" data-id="${s.id}">
@@ -194,6 +231,7 @@ async function renderSchedulingTab(main) {
           <div class="text-muted">${describeRecurrence(s)} — next: ${next ? HD_CAL.ymd(next) : '—'}${s.category === 'chore' ? ` (completed ${s.completedCount || 0}×, manage in Maintenance tab)` : ''}</div>
           ${s.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(s.notes)}</div>` : ''}
           <div class="task-actions">
+            <button type="button" data-edit="${s.id}">Edit</button>
             <button type="button" data-delete="${s.id}">Delete</button>
           </div>
         </div>`;
@@ -204,6 +242,53 @@ async function renderSchedulingTab(main) {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this schedule?')) return;
         await HD_DB.dbDelete('scheduling', btn.dataset.delete);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.edit;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-cancel-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-kind]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const id = select.dataset.editKind;
+        const isInterval = select.value === 'interval';
+        listEl.querySelector(`[data-edit-interval-fields="${id}"]`).hidden = !isInterval;
+        listEl.querySelector(`[data-edit-nth-fields="${id}"]`).hidden = isInterval;
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = form.dataset.editForm;
+        const schedule = schedules.find((s) => s.id === id);
+        const fd = new FormData(form);
+        const title = fd.get('title').trim();
+        if (!title) return;
+        schedule.title = title;
+        schedule.category = fd.get('category');
+        schedule.assignedTo = fd.get('assignedTo');
+        schedule.recurrenceKind = fd.get('recurrenceKind');
+        schedule.intervalCount = Number(fd.get('intervalCount')) || 1;
+        schedule.intervalUnit = fd.get('intervalUnit');
+        schedule.nth = Number(fd.get('nth')) || 1;
+        schedule.weekday = Number(fd.get('weekday')) || 0;
+        schedule.anchorDate = fd.get('anchorDate');
+        schedule.notes = fd.get('notes').trim();
+        await HD_DB.dbPut('scheduling', schedule);
+        editingId = null;
         refresh();
       });
     });

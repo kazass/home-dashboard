@@ -16,6 +16,20 @@ async function renderShoppingTab(main) {
     <div id="shopping-list"></div>`;
 
   const listEl = document.getElementById('shopping-list');
+  let editingId = null;
+
+  function editFormHtml(it) {
+    return `
+      <form class="item-edit-form" data-edit-form="${it.id}">
+        <input name="item" value="${HD_CAL.escapeHtml(it.item)}" required>
+        <input name="qty" value="${HD_CAL.escapeHtml(it.qty || '')}" placeholder="Qty (optional)">
+        <input name="category" value="${HD_CAL.escapeHtml(it.category || '')}" placeholder="Category (optional)">
+        <div class="modal-form-actions">
+          <button type="button" data-cancel-edit>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>`;
+  }
 
   async function refresh() {
     const items = await HD_DB.dbGetAll('shoppingItems');
@@ -36,13 +50,16 @@ async function renderShoppingTab(main) {
     listEl.innerHTML = [...groups.entries()].map(([cat, catItems]) => `
       <div class="shopping-group">
         <h5>${HD_CAL.escapeHtml(cat)}</h5>
-        ${catItems.map((it) => `
+        ${catItems.map((it) => it.id === editingId ? editFormHtml(it) : `
           <div class="shopping-row ${it.checked ? 'checked' : ''}" data-id="${it.id}">
             <label class="shopping-row-main">
               <input type="checkbox" data-check="${it.id}" ${it.checked ? 'checked' : ''}>
               <span>${HD_CAL.escapeHtml(it.item)}${it.qty ? ` <span class="badge">${HD_CAL.escapeHtml(it.qty)}</span>` : ''}</span>
             </label>
-            <button type="button" data-delete="${it.id}">Delete</button>
+            <div class="task-actions">
+              <button type="button" data-edit="${it.id}">Edit</button>
+              <button type="button" data-delete="${it.id}">Delete</button>
+            </div>
           </div>`).join('')}
       </div>`).join('');
 
@@ -58,6 +75,37 @@ async function renderShoppingTab(main) {
     listEl.querySelectorAll('[data-delete]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         await HD_DB.dbDelete('shoppingItems', btn.dataset.delete);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.edit;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-cancel-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = form.dataset.editForm;
+        const item = items.find((i) => i.id === id);
+        const fd = new FormData(form);
+        const name = fd.get('item').trim();
+        if (!name) return;
+        item.item = name;
+        item.qty = fd.get('qty').trim();
+        item.category = fd.get('category').trim();
+        await HD_DB.dbPut('shoppingItems', item);
+        editingId = null;
         refresh();
       });
     });

@@ -1,6 +1,11 @@
-const IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes of no touch/click/key activity
+const DEFAULT_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // fallback if settings aren't available
 
 let lastActivity = Date.now();
+
+function getIdleTimeoutMs() {
+  if (window.HD_SETTINGS) return HD_SETTINGS.getIdleTimeoutMinutes() * 60 * 1000;
+  return DEFAULT_IDLE_TIMEOUT_MS;
+}
 
 function isAmbientShowing() {
   return !!document.getElementById('ambient-overlay');
@@ -75,7 +80,7 @@ function showAmbientOverlay() {
 
 function checkIdle() {
   if (isAmbientShowing()) return;
-  if (Date.now() - lastActivity >= IDLE_TIMEOUT_MS) {
+  if (Date.now() - lastActivity >= getIdleTimeoutMs()) {
     showAmbientOverlay();
   }
 }
@@ -93,6 +98,6 @@ window.HD_SCREENSAVER = {
   initScreensaver,
   showAmbientOverlay,
   checkIdle,
-  IDLE_TIMEOUT_MS,
+  getIdleTimeoutMs,
   _setLastActivityForTest: (t) => { lastActivity = t; },
 };

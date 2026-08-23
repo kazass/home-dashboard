@@ -91,12 +91,38 @@ async function renderGardenTab(main) {
     return `<span class="task-due">Water in ${diffDays}d</span>`;
   }
 
+  let editingId = null;
+
+  function editFormHtml(p) {
+    return `
+      <form class="item-edit-form plant-body" data-edit-form="${p.id}">
+        <input name="name" value="${HD_CAL.escapeHtml(p.name)}" required>
+        <input type="file" name="photoFile" accept="image/*">
+        <input name="photoUrl" value="${HD_CAL.escapeHtml(p.photoUrl || '')}" placeholder="...or paste an image URL">
+        <input name="sunlight" value="${HD_CAL.escapeHtml(p.sunlight || '')}" placeholder="Sunlight (optional)">
+        <div class="recurrence-fields">
+          <input type="number" name="waterIntervalCount" min="1" value="${p.waterIntervalCount}" style="width:60px">
+          <select name="waterIntervalUnit">
+            <option value="days" ${p.waterIntervalUnit === 'days' ? 'selected' : ''}>Days</option>
+            <option value="weeks" ${p.waterIntervalUnit === 'weeks' ? 'selected' : ''}>Weeks</option>
+          </select>
+        </div>
+        <textarea name="careInstructions" placeholder="Care instructions">${HD_CAL.escapeHtml(p.careInstructions || '')}</textarea>
+        <input name="sourceUrl" value="${HD_CAL.escapeHtml(p.sourceUrl || '')}" placeholder="Source link (optional)">
+        <div class="modal-form-actions">
+          <button type="button" data-cancel-edit>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>`;
+  }
+
   async function refresh() {
     const plants = await HD_DB.dbGetAll('plants');
     plants.sort((a, b) => plantNextWaterDue(a) - plantNextWaterDue(b));
 
     listEl.innerHTML = plants.length
       ? plants.map((p) => {
+        if (p.id === editingId) return `<div class="plant-card" data-id="${p.id}">${editFormHtml(p)}</div>`;
         const due = plantNextWaterDue(p);
         const src = photoSrc(p);
         return `
@@ -112,6 +138,7 @@ async function renderGardenTab(main) {
               ${p.sourceUrl ? `<div><a href="${HD_CAL.escapeHtml(p.sourceUrl)}" target="_blank" rel="noopener">Source</a></div>` : ''}
               <div class="task-actions">
                 <button type="button" data-watered="${p.id}">Mark watered</button>
+                <button type="button" data-edit="${p.id}">Edit</button>
                 <button type="button" data-delete="${p.id}">Delete</button>
               </div>
             </div>
@@ -121,6 +148,7 @@ async function renderGardenTab(main) {
 
     listEl.querySelectorAll('[data-watered]').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        btn.disabled = true;
         const plant = plants.find((p) => p.id === btn.dataset.watered);
         const wateredAt = new Date();
         wateredAt.setHours(0, 0, 0, 0);
@@ -134,6 +162,53 @@ async function renderGardenTab(main) {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this plant?')) return;
         await HD_DB.dbDelete('plants', btn.dataset.delete);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.edit;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-cancel-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = form.dataset.editForm;
+        const plant = plants.find((p) => p.id === id);
+        const fd = new FormData(form);
+        const name = fd.get('name').trim();
+        if (!name) return;
+
+        const file = fd.get('photoFile');
+        if (file && file.size > 0) {
+          plant.photoBlob = await compressImage(file);
+          plant.photoUrl = '';
+        } else {
+          const newUrl = fd.get('photoUrl').trim();
+          if (newUrl !== (plant.photoUrl || '')) {
+            plant.photoUrl = newUrl;
+            plant.photoBlob = null;
+          }
+        }
+
+        plant.name = name;
+        plant.sunlight = fd.get('sunlight').trim();
+        plant.waterIntervalCount = Number(fd.get('waterIntervalCount')) || 7;
+        plant.waterIntervalUnit = fd.get('waterIntervalUnit');
+        plant.careInstructions = fd.get('careInstructions').trim();
+        plant.sourceUrl = fd.get('sourceUrl').trim();
+        await HD_DB.dbPut('plants', plant);
+        editingId = null;
         refresh();
       });
     });

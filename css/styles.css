@@ -1069,3 +1069,57 @@ input[type="checkbox"] {
     font-size: 4rem;
   }
 }
+
+/* Settings */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.settings-field select {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Edit forms reused across list tabs */
+.item-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.item-edit-form input,
+.item-edit-form select,
+.item-edit-form textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.item-edit-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* Completed-item calendar chip */
+.event-chip.completed {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.event-dot.completed {
+  background: var(--text-muted);
+}

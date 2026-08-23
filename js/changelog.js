@@ -1,7 +1,16 @@
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 // Newest first. Add one entry here each time a real update ships.
 const CHANGELOG = [
+  {
+    version: '1.4.0',
+    date: '2026-08-23',
+    notes: [
+      'Completed tasks, ideas, and chores now show as a checkmark chip on the calendar (on the day they were finished) and in the day popup.',
+      'Every list (Shopping, Home/Work, Scheduling, Maintenance, Ideas, Garden, Recipes) can now be edited in place, not just added to and deleted.',
+      'Added a Settings button to make the screensaver idle timeout adjustable instead of fixed at 3 minutes.',
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-08-09',

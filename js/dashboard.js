@@ -21,10 +21,12 @@ function openEventModal(dateStr, onChange) {
     const plantItems = window.HD_GARDEN
       ? await HD_GARDEN.getPlantWaterItemsInRange(dayOnly, dayOnly).catch(() => [])
       : [];
+    const completedItems = await HD_CAL.getCompletedItemsInRange(dayOnly, dayOnly).catch(() => []);
     const dayEvents = [
       ...all.filter((e) => e.date <= dateStr && (e.endDate || e.date) >= dateStr),
       ...scheduleItems,
       ...plantItems,
+      ...completedItems,
     ];
     const label = HD_CAL.parseYMD(dateStr).toLocaleDateString(undefined, {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -44,9 +46,9 @@ function openEventModal(dateStr, onChange) {
                 <div class="event-row-main">
                   <span class="event-dot ${e.isHoliday ? 'holiday' : e.type}"></span>
                   <span>${HD_CAL.escapeHtml(e.title)}</span>
-                  <span class="badge">${e.isHoliday ? 'Holiday' : e.isSchedule ? { chore: 'Chore', plant: 'Watering' }[e.category] || 'Recurring' : (e.assignedTo || 'Both')}</span>
+                  <span class="badge">${e.isHoliday ? 'Holiday' : e.isCompletedRecord ? 'Completed' : e.isSchedule ? { chore: 'Chore', plant: 'Watering' }[e.category] || 'Recurring' : (e.assignedTo || 'Both')}</span>
                 </div>
-                ${e.isHoliday || e.isSchedule ? (e.isSchedule ? `<div class="text-muted">Manage in the ${e.category === 'plant' ? 'Garden' : 'Scheduling/Maintenance'} tab.</div>` : '') : `
+                ${e.isHoliday || e.isSchedule || e.isCompletedRecord ? (e.isSchedule ? `<div class="text-muted">Manage in the ${e.category === 'plant' ? 'Garden' : 'Scheduling/Maintenance'} tab.</div>` : e.isCompletedRecord ? `<div class="text-muted">See the ${e.sourceTab} tab.</div>` : '') : `
                   <div class="event-row-actions">
                     <a href="${HD_CAL.googleCalendarLink(e)}" target="_blank" rel="noopener">Add to Google Cal</a>
                     <button type="button" data-edit="${e.id}">Edit</button>

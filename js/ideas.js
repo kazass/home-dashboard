@@ -14,13 +14,29 @@ async function renderIdeasTab(main) {
     <div id="ideas-list"></div>`;
 
   const listEl = document.getElementById('ideas-list');
+  let editingId = null;
+
+  function editFormHtml(i) {
+    return `
+      <form class="item-edit-form" data-edit-form="${i.id}">
+        <input name="title" value="${HD_CAL.escapeHtml(i.title)}" required>
+        <input name="when" value="${HD_CAL.escapeHtml(i.when || '')}" placeholder="When (optional)">
+        <input name="tags" value="${HD_CAL.escapeHtml(i.tags || '')}" placeholder="Tags (optional, comma-separated)">
+        <select name="assignedTo">${IDEA_ASSIGNEES.map((a) => `<option value="${a}" ${a === i.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(i.notes || '')}</textarea>
+        <div class="modal-form-actions">
+          <button type="button" data-cancel-edit>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>`;
+  }
 
   async function refresh() {
     const ideas = await HD_DB.dbGetAll('ideas');
     ideas.sort((a, b) => (a.status === 'done') - (b.status === 'done') || (b.createdAt - a.createdAt));
 
     listEl.innerHTML = ideas.length
-      ? ideas.map((i) => `
+      ? ideas.map((i) => i.id === editingId ? editFormHtml(i) : `
         <div class="task-row ${i.status === 'done' ? 'done' : ''}" data-id="${i.id}">
           <label class="task-row-main">
             <input type="checkbox" data-toggle="${i.id}" ${i.status === 'done' ? 'checked' : ''}>
@@ -31,6 +47,7 @@ async function renderIdeasTab(main) {
           </label>
           ${i.notes ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(i.notes)}</div>` : ''}
           <div class="task-actions">
+            <button type="button" data-edit="${i.id}">Edit</button>
             <button type="button" data-delete="${i.id}">Delete</button>
           </div>
         </div>`).join('')
@@ -40,6 +57,13 @@ async function renderIdeasTab(main) {
       cb.addEventListener('change', async () => {
         const idea = ideas.find((i) => i.id === cb.dataset.toggle);
         idea.status = cb.checked ? 'done' : 'idea';
+        if (cb.checked) {
+          const completedDate = new Date();
+          completedDate.setHours(0, 0, 0, 0);
+          idea.completedAt = completedDate.getTime();
+        } else {
+          idea.completedAt = null;
+        }
         await HD_DB.dbPut('ideas', idea);
         refresh();
       });
@@ -49,6 +73,39 @@ async function renderIdeasTab(main) {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this idea?')) return;
         await HD_DB.dbDelete('ideas', btn.dataset.delete);
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.edit;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-cancel-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingId = null;
+        refresh();
+      });
+    });
+
+    listEl.querySelectorAll('[data-edit-form]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = form.dataset.editForm;
+        const idea = ideas.find((i) => i.id === id);
+        const fd = new FormData(form);
+        const title = fd.get('title').trim();
+        if (!title) return;
+        idea.title = title;
+        idea.when = fd.get('when').trim();
+        idea.tags = fd.get('tags').trim();
+        idea.assignedTo = fd.get('assignedTo');
+        idea.notes = fd.get('notes').trim();
+        await HD_DB.dbPut('ideas', idea);
+        editingId = null;
         refresh();
       });
     });
