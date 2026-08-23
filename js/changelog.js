@@ -1,4 +1,4 @@
-const APP_VERSION = '2.1.3';
+const APP_VERSION = '2.1.4';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,13 @@ const APP_VERSION = '2.1.3';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.1.4',
+    date: '2026-08-24',
+    notes: [
+      'Fixed a root cause of updates sometimes taking a while to show up on the tablet: GitHub Pages serves files with a 10-minute cache, so the app could keep re-fetching a stale copy of itself even after a new version was live. Updates now always fetch fresh.',
+    ],
+  },
   {
     version: '2.1.3',
     date: '2026-08-24',
