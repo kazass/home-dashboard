@@ -1,3 +1,10 @@
+let gardenPhotoUrls = [];
+
+function cleanupPhotoUrls() {
+  gardenPhotoUrls.forEach((url) => URL.revokeObjectURL(url));
+  gardenPhotoUrls = [];
+}
+
 function compressImage(file, maxDim = 800, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -16,7 +23,10 @@ function compressImage(file, maxDim = 800, quality = 0.8) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('The selected image could not be compressed.'));
+        }, 'image/jpeg', quality);
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -54,8 +64,12 @@ async function getPlantWaterItemsInRange(rangeStart, rangeEnd) {
 }
 
 function photoSrc(plant) {
-  if (plant.photoBlob) return URL.createObjectURL(plant.photoBlob);
-  if (plant.photoUrl) return plant.photoUrl;
+  if (plant.photoBlob) {
+    const url = URL.createObjectURL(plant.photoBlob);
+    gardenPhotoUrls.push(url);
+    return url;
+  }
+  if (plant.photoUrl) return HD_SETTINGS.safeExternalUrl(plant.photoUrl);
   return null;
 }
 
@@ -119,15 +133,17 @@ async function renderGardenTab(main) {
   async function refresh() {
     const plants = await HD_DB.dbGetAll('plants');
     plants.sort((a, b) => plantNextWaterDue(a) - plantNextWaterDue(b));
+    cleanupPhotoUrls();
 
     listEl.innerHTML = plants.length
       ? plants.map((p) => {
         if (p.id === editingId) return `<div class="plant-card" data-id="${p.id}">${editFormHtml(p)}</div>`;
         const due = plantNextWaterDue(p);
         const src = photoSrc(p);
+        const sourceUrl = HD_SETTINGS.safeExternalUrl(p.sourceUrl);
         return `
           <div class="plant-card" data-id="${p.id}">
-            ${src ? `<img class="plant-photo" src="${src}" alt="${HD_CAL.escapeHtml(p.name)}">` : '<div class="plant-photo plant-photo-empty">No photo</div>'}
+            ${src ? `<img class="plant-photo" src="${HD_CAL.escapeHtml(src)}" alt="${HD_CAL.escapeHtml(p.name)}">` : '<div class="plant-photo plant-photo-empty">No photo</div>'}
             <div class="plant-body">
               <div class="task-row-main">
                 <span class="task-title">${HD_CAL.escapeHtml(p.name)}</span>
@@ -135,7 +151,7 @@ async function renderGardenTab(main) {
               </div>
               <div>${dueBadge(due)} <span class="text-muted">every ${p.waterIntervalCount} ${p.waterIntervalUnit}</span></div>
               ${p.careInstructions ? `<div class="task-notes text-muted">${HD_CAL.escapeHtml(p.careInstructions)}</div>` : ''}
-              ${p.sourceUrl ? `<div><a href="${HD_CAL.escapeHtml(p.sourceUrl)}" target="_blank" rel="noopener">Source</a></div>` : ''}
+              ${sourceUrl ? `<div><a href="${HD_CAL.escapeHtml(sourceUrl)}" target="_blank" rel="noopener">Source</a></div>` : ''}
               <div class="task-actions">
                 <button type="button" data-watered="${p.id}">Mark watered</button>
                 <button type="button" data-edit="${p.id}">Edit</button>
@@ -189,14 +205,26 @@ async function renderGardenTab(main) {
         const name = fd.get('name').trim();
         if (!name) return;
 
+        const rawSourceUrl = fd.get('sourceUrl').trim();
+        const safeSourceUrl = HD_SETTINGS.safeExternalUrl(rawSourceUrl);
+        if (rawSourceUrl && !safeSourceUrl) {
+          alert('Source link must start with http:// or https://.');
+          return;
+        }
+
         const file = fd.get('photoFile');
         if (file && file.size > 0) {
           plant.photoBlob = await compressImage(file);
           plant.photoUrl = '';
         } else {
           const newUrl = fd.get('photoUrl').trim();
+          const safePhotoUrl = HD_SETTINGS.safeExternalUrl(newUrl);
+          if (newUrl && !safePhotoUrl) {
+            alert('Photo link must start with http:// or https://.');
+            return;
+          }
           if (newUrl !== (plant.photoUrl || '')) {
-            plant.photoUrl = newUrl;
+            plant.photoUrl = safePhotoUrl || '';
             plant.photoBlob = null;
           }
         }
@@ -206,7 +234,7 @@ async function renderGardenTab(main) {
         plant.waterIntervalCount = Number(fd.get('waterIntervalCount')) || 7;
         plant.waterIntervalUnit = fd.get('waterIntervalUnit');
         plant.careInstructions = fd.get('careInstructions').trim();
-        plant.sourceUrl = fd.get('sourceUrl').trim();
+        plant.sourceUrl = safeSourceUrl || '';
         await HD_DB.dbPut('plants', plant);
         editingId = null;
         refresh();
@@ -219,6 +247,15 @@ async function renderGardenTab(main) {
     const fd = new FormData(ev.target);
     const name = fd.get('name').trim();
     if (!name) return;
+
+    const rawPhotoUrl = fd.get('photoUrl').trim();
+    const safePhotoUrl = HD_SETTINGS.safeExternalUrl(rawPhotoUrl);
+    const rawSourceUrl = fd.get('sourceUrl').trim();
+    const safeSourceUrl = HD_SETTINGS.safeExternalUrl(rawSourceUrl);
+    if ((rawPhotoUrl && !safePhotoUrl) || (rawSourceUrl && !safeSourceUrl)) {
+      alert('Photo and source links must start with http:// or https://.');
+      return;
+    }
 
     const file = fd.get('photoFile');
     let photoBlob = null;
@@ -233,12 +270,12 @@ async function renderGardenTab(main) {
       id: crypto.randomUUID(),
       name,
       photoBlob,
-      photoUrl: photoBlob ? '' : fd.get('photoUrl').trim(),
+      photoUrl: photoBlob ? '' : (safePhotoUrl || ''),
       sunlight: fd.get('sunlight').trim(),
       waterIntervalCount: Number(fd.get('waterIntervalCount')) || 7,
       waterIntervalUnit: fd.get('waterIntervalUnit'),
       careInstructions: fd.get('careInstructions').trim(),
-      sourceUrl: fd.get('sourceUrl').trim(),
+      sourceUrl: safeSourceUrl || '',
       lastWateredAt: null,
       createdDateStr: HD_CAL.ymd(createdToday),
       createdAt: Date.now(),
@@ -250,4 +287,6 @@ async function renderGardenTab(main) {
   refresh();
 }
 
-window.HD_GARDEN = { renderGardenTab, getPlantWaterItemsInRange, plantNextWaterDue, compressImage };
+window.HD_GARDEN = {
+  renderGardenTab, getPlantWaterItemsInRange, plantNextWaterDue, compressImage, cleanupPhotoUrls,
+};

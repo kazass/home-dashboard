@@ -1,0 +1,8 @@
+{
+  "name": "home-dashboard",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "for f in js/*.js service-worker.js tests/*.js; do node --check \"$f\" || exit 1; done"
+  }
+}

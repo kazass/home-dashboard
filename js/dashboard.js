@@ -71,7 +71,7 @@ function openEventModal(dateStr, onChange) {
             </label>
             <label>Assigned to
               <select name="assignedTo">
-                ${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${editing && editing.assignedTo === a ? 'selected' : ''}>${a}</option>`).join('')}
+                ${HD_SETTINGS.assigneeOptionsHtml(editing && editing.assignedTo)}
               </select>
             </label>
             <label>Notes

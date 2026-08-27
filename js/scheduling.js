@@ -5,7 +5,15 @@ function addUnits(date, amount, unit) {
   const d = new Date(date);
   if (unit === 'days') d.setDate(d.getDate() + amount);
   else if (unit === 'weeks') d.setDate(d.getDate() + amount * 7);
-  else if (unit === 'months') d.setMonth(d.getMonth() + amount);
+  else if (unit === 'months') {
+    // setMonth rolls Jan 31 into March. Move through day 1 and then clamp to
+    // the target month's final day so monthly schedules stay monthly.
+    const originalDay = d.getDate();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + amount);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(originalDay, lastDay));
+  }
   return d;
 }
 
@@ -134,7 +142,7 @@ async function renderPlansContent(main) {
     <p class="text-muted">Recurring plans — things that repeat like "dinner every 3rd Friday". For recurring chores, use the Recurring chores tab.</p>
     <form id="schedule-form" class="inline-form schedule-form">
       <input name="title" placeholder="Title" required>
-      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml()}</select>
       <select name="recurrenceKind" id="recurrenceKind">
         <option value="interval">Every N days/weeks/months</option>
         <option value="nthWeekday">Nth weekday of month</option>
@@ -178,7 +186,7 @@ async function renderPlansContent(main) {
     return `
       <form class="item-edit-form" data-edit-form="${s.id}">
         <input name="title" value="${HD_CAL.escapeHtml(s.title)}" required>
-        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === s.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml(s.assignedTo)}</select>
         <select name="recurrenceKind" data-edit-kind="${s.id}">
           <option value="interval" ${isInterval ? 'selected' : ''}>Every N days/weeks/months</option>
           <option value="nthWeekday" ${!isInterval ? 'selected' : ''}>Nth weekday of month</option>

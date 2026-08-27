@@ -81,16 +81,37 @@ function getShowCompletedOnCalendar() {
 }
 
 function getPersonColor(name) {
-  return getSettings().personColors[name] || null;
+  const color = getSettings().personColors[name];
+  return typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
 }
 
 function getUserNames() {
   const names = getSettings().userNames;
-  return Array.isArray(names) && names.length ? names : Object.keys(DEFAULT_SETTINGS.personColors);
+  const validNames = Array.isArray(names)
+    ? names.filter((name) => typeof name === 'string' && name.trim() && name.length <= 60)
+    : [];
+  return validNames.length ? validNames : Object.keys(DEFAULT_SETTINGS.personColors);
 }
 
 function getAssigneeOptions() {
   return ['Both', ...getUserNames()];
+}
+
+function assigneeOptionsHtml(selected) {
+  return getAssigneeOptions().map((name) => {
+    const safe = HD_CAL.escapeHtml(name);
+    return `<option value="${safe}" ${name === selected ? 'selected' : ''}>${safe}</option>`;
+  }).join('');
+}
+
+function safeExternalUrl(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function getDailyStatusEnabled() {
@@ -115,9 +136,9 @@ function setCardHidden(cardId, hidden) {
 // relabel it.
 async function renameUser(oldName, newName) {
   const trimmed = newName.trim();
-  if (!trimmed || trimmed === oldName) return false;
+  if (!trimmed || trimmed.length > 60 || trimmed === oldName || trimmed.toLowerCase() === 'both') return false;
   const names = getUserNames();
-  if (names.includes(trimmed)) return false;
+  if (names.some((name) => name.toLowerCase() === trimmed.toLowerCase())) return false;
   const updatedNames = names.map((n) => (n === oldName ? trimmed : n));
   const personColors = { ...getSettings().personColors };
   personColors[trimmed] = personColors[oldName];
@@ -158,8 +179,9 @@ async function migratePersonNameInStores(oldName, newName) {
 function personBadgeHtml(name) {
   const label = name || 'Both';
   const color = getPersonColor(label);
-  if (!color) return `<span class="badge">${label}</span>`;
-  return `<span class="badge person-badge" style="background:${color}26;color:${color};border:1px solid ${color}66">${label}</span>`;
+  const safeLabel = HD_CAL.escapeHtml(label);
+  if (!color) return `<span class="badge">${safeLabel}</span>`;
+  return `<span class="badge person-badge" style="background:${color}26;color:${color};border:1px solid ${color}66">${safeLabel}</span>`;
 }
 
 // Converts a normal open.spotify.com link (playlist/album/track/artist/show/
@@ -195,11 +217,24 @@ if (window.matchMedia) {
 
 function openSettingsModal() {
   let overlay = document.getElementById('settings-modal-overlay');
-  if (overlay) overlay.remove();
+  if (overlay) {
+    if (overlay.cleanupPhotoUrls) overlay.cleanupPhotoUrls();
+    overlay.remove();
+  }
   overlay = document.createElement('div');
   overlay.id = 'settings-modal-overlay';
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
+  let photoUrls = [];
+  function cleanupPhotoUrls() {
+    photoUrls.forEach((url) => URL.revokeObjectURL(url));
+    photoUrls = [];
+  }
+  function closeSettings() {
+    cleanupPhotoUrls();
+    overlay.remove();
+  }
+  overlay.cleanupPhotoUrls = cleanupPhotoUrls;
 
   const current = getIdleTimeoutMinutes();
   const { theme: currentTheme, accentColor: currentAccent, spotifyUrl: currentSpotify } = getSettings();
@@ -269,7 +304,7 @@ function openSettingsModal() {
           <div class="person-color-row">
             ${getUserNames().map((name) => `
               <label class="person-color-item">
-                <input type="color" data-person-color="${name}" value="${getPersonColor(name)}">
+                <input type="color" data-person-color="${HD_CAL.escapeHtml(name)}" value="${getPersonColor(name) || '#777777'}">
                 <input type="text" class="user-name-input" data-user-name="${HD_CAL.escapeHtml(name)}" value="${HD_CAL.escapeHtml(name)}">
               </label>`).join('')}
           </div>
@@ -288,8 +323,8 @@ function openSettingsModal() {
       </div>
     </div>`;
 
-  overlay.querySelector('#settings-close-btn').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#settings-close-btn').addEventListener('click', closeSettings);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSettings(); });
   overlay.querySelector('#idle-timeout-select').addEventListener('change', (e) => {
     saveSettings({ idleTimeoutMinutes: Number(e.target.value) });
   });
@@ -349,7 +384,7 @@ function openSettingsModal() {
   });
   overlay.querySelector('#reset-layout-btn').addEventListener('click', () => {
     if (window.HD_LAYOUT) HD_LAYOUT.resetLayout();
-    overlay.remove();
+    closeSettings();
     location.reload();
   });
   overlay.querySelector('#spotify-url-input').addEventListener('change', (e) => {
@@ -366,12 +401,17 @@ function openSettingsModal() {
     const photos = await HD_DB.dbGetAll('photos');
     const thumbsEl = overlay.querySelector('#photo-thumbs');
     if (!thumbsEl) return;
+    cleanupPhotoUrls();
     thumbsEl.innerHTML = photos.length
-      ? photos.map((p) => `
+      ? photos.map((p) => {
+        const url = URL.createObjectURL(p.photoBlob);
+        photoUrls.push(url);
+        return `
         <div class="photo-thumb" data-id="${p.id}">
-          <img src="${URL.createObjectURL(p.photoBlob)}" alt="">
+          <img src="${url}" alt="">
           <button type="button" data-delete-photo="${p.id}" aria-label="Delete">&times;</button>
-        </div>`).join('')
+        </div>`;
+      }).join('')
       : '<p class="text-muted">No photos yet — add some for the screensaver to cycle through.</p>';
     thumbsEl.querySelectorAll('[data-delete-photo]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -397,7 +437,7 @@ function openSettingsModal() {
 window.HD_SETTINGS = {
   getSettings, saveSettings, getIdleTimeoutMinutes, getShowCompletedOnCalendar,
   getPersonColor, personBadgeHtml, applyAppearance, openSettingsModal,
-  spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
-  getUserNames, getAssigneeOptions, getDailyStatusEnabled, renameUser,
+  spotifyEmbedUrl, safeExternalUrl, THEMES, ACCENT_PRESETS,
+  getUserNames, getAssigneeOptions, assigneeOptionsHtml, getDailyStatusEnabled, renameUser,
   getHiddenCards, setCardHidden,
 };

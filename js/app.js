@@ -8,6 +8,8 @@ const TABS = [
   { id: 'recipes', label: 'Recipes' },
 ];
 
+let activeTabId = null;
+
 function renderNav() {
   const nav = document.getElementById('nav');
   const version = window.HD_CHANGELOG ? window.HD_CHANGELOG.APP_VERSION : '';
@@ -65,6 +67,9 @@ function renderPlaceholder(tabId) {
 }
 
 function setActive(tabId) {
+  if (activeTabId === 'garden' && window.HD_GARDEN) HD_GARDEN.cleanupPhotoUrls();
+  if (activeTabId === 'recipes' && window.HD_RECIPES) HD_RECIPES.cleanupPhotoUrls();
+  activeTabId = tabId;
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tabId);
   });
@@ -105,5 +110,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if (window.HD_DAILY_STATUS) window.HD_DAILY_STATUS.initDailyStatusCheck();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(console.error);
+  }
+  // Ask the browser not to evict IndexedDB under storage pressure. Browsers
+  // may decline, so manual backups remain important.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => false);
   }
 });

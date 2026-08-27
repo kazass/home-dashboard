@@ -1,14 +1,26 @@
 let recipesSubView = 'recipes';
+let recipePhotoUrls = [];
+
+function cleanupPhotoUrls() {
+  recipePhotoUrls.forEach((url) => URL.revokeObjectURL(url));
+  recipePhotoUrls = [];
+}
 
 function recipePhotoSrc(recipe) {
-  if (recipe.photoBlob) return URL.createObjectURL(recipe.photoBlob);
-  if (recipe.photoUrl) return recipe.photoUrl;
+  if (recipe.photoBlob) {
+    const url = URL.createObjectURL(recipe.photoBlob);
+    recipePhotoUrls.push(url);
+    return url;
+  }
+  if (recipe.photoUrl) return HD_SETTINGS.safeExternalUrl(recipe.photoUrl);
   return null;
 }
 
 function starsHtml(recipeId, person, rating) {
-  return `<div class="stars" data-person="${person}">
-    ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star ${n <= (rating || 0) ? 'filled' : ''}" data-recipe="${recipeId}" data-person="${person}" data-rate="${n}">★</button>`).join('')}
+  const safeId = HD_CAL.escapeHtml(recipeId);
+  const safePerson = HD_CAL.escapeHtml(person);
+  return `<div class="stars" data-person="${safePerson}">
+    ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star ${n <= (rating || 0) ? 'filled' : ''}" data-recipe="${safeId}" data-person="${safePerson}" data-rate="${n}">★</button>`).join('')}
   </div>`;
 }
 
@@ -36,6 +48,7 @@ async function renderRecipesTab(main) {
     });
     const content = document.getElementById('recipes-content');
     if (recipesSubView === 'mealplan') {
+      cleanupPhotoUrls();
       renderMealPlanView(content);
     } else {
       renderRecipeListView(content);
@@ -82,15 +95,17 @@ async function renderRecipeListView(content) {
   async function refresh() {
     const recipes = await HD_DB.dbGetAll('recipes');
     recipes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    cleanupPhotoUrls();
 
     listEl.innerHTML = recipes.length
       ? recipes.map((r) => {
         if (r.id === editingId) return `<div class="plant-card" data-id="${r.id}">${editFormHtml(r)}</div>`;
         const src = recipePhotoSrc(r);
+        const sourceUrl = HD_SETTINGS.safeExternalUrl(r.sourceUrl);
         const tags = (r.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
         return `
         <div class="plant-card" data-id="${r.id}">
-          ${src ? `<img class="plant-photo" src="${src}" alt="${HD_CAL.escapeHtml(r.title)}">` : '<div class="plant-photo plant-photo-empty">No photo</div>'}
+          ${src ? `<img class="plant-photo" src="${HD_CAL.escapeHtml(src)}" alt="${HD_CAL.escapeHtml(r.title)}">` : '<div class="plant-photo plant-photo-empty">No photo</div>'}
           <div class="plant-body">
             <div class="task-row-main">
               <span class="task-title">${HD_CAL.escapeHtml(r.title)}</span>
@@ -98,7 +113,7 @@ async function renderRecipeListView(content) {
             </div>
             ${HD_SETTINGS.getUserNames().map((p) => `
               <div class="rating-row">
-                <span class="text-muted">${p}</span>
+                <span class="text-muted">${HD_CAL.escapeHtml(p)}</span>
                 ${starsHtml(r.id, p, (r.ratings || {})[p])}
               </div>`).join('')}
             <details>
@@ -106,7 +121,7 @@ async function renderRecipeListView(content) {
               <div class="task-notes text-muted"><strong>Ingredients:</strong><br>${HD_CAL.escapeHtml(r.ingredients || '').replace(/\n/g, '<br>')}</div>
               <div class="task-notes text-muted"><strong>Steps:</strong><br>${HD_CAL.escapeHtml(r.steps || '').replace(/\n/g, '<br>')}</div>
             </details>
-            ${r.sourceUrl ? `<div><a href="${HD_CAL.escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener">Source</a></div>` : ''}
+            ${sourceUrl ? `<div><a href="${HD_CAL.escapeHtml(sourceUrl)}" target="_blank" rel="noopener">Source</a></div>` : ''}
             <div class="task-actions">
               <button type="button" data-edit="${r.id}">Edit</button>
               <button type="button" data-delete="${r.id}">Delete</button>
@@ -159,21 +174,33 @@ async function renderRecipeListView(content) {
         const title = fd.get('title').trim();
         if (!title) return;
 
+        const rawSourceUrl = fd.get('sourceUrl').trim();
+        const safeSourceUrl = HD_SETTINGS.safeExternalUrl(rawSourceUrl);
+        if (rawSourceUrl && !safeSourceUrl) {
+          alert('Source link must start with http:// or https://.');
+          return;
+        }
+
         const file = fd.get('photoFile');
         if (file && file.size > 0) {
           recipe.photoBlob = await HD_GARDEN.compressImage(file);
           recipe.photoUrl = '';
         } else {
           const newUrl = fd.get('photoUrl').trim();
+          const safePhotoUrl = HD_SETTINGS.safeExternalUrl(newUrl);
+          if (newUrl && !safePhotoUrl) {
+            alert('Photo link must start with http:// or https://.');
+            return;
+          }
           if (newUrl !== (recipe.photoUrl || '')) {
-            recipe.photoUrl = newUrl;
+            recipe.photoUrl = safePhotoUrl || '';
             recipe.photoBlob = null;
           }
         }
 
         recipe.title = title;
         recipe.tags = fd.get('tags').trim();
-        recipe.sourceUrl = fd.get('sourceUrl').trim();
+        recipe.sourceUrl = safeSourceUrl || '';
         recipe.ingredients = fd.get('ingredients').trim();
         recipe.steps = fd.get('steps').trim();
         await HD_DB.dbPut('recipes', recipe);
@@ -189,6 +216,15 @@ async function renderRecipeListView(content) {
     const title = fd.get('title').trim();
     if (!title) return;
 
+    const rawPhotoUrl = fd.get('photoUrl').trim();
+    const safePhotoUrl = HD_SETTINGS.safeExternalUrl(rawPhotoUrl);
+    const rawSourceUrl = fd.get('sourceUrl').trim();
+    const safeSourceUrl = HD_SETTINGS.safeExternalUrl(rawSourceUrl);
+    if ((rawPhotoUrl && !safePhotoUrl) || (rawSourceUrl && !safeSourceUrl)) {
+      alert('Photo and source links must start with http:// or https://.');
+      return;
+    }
+
     const file = fd.get('photoFile');
     let photoBlob = null;
     if (file && file.size > 0) {
@@ -199,9 +235,9 @@ async function renderRecipeListView(content) {
       id: crypto.randomUUID(),
       title,
       photoBlob,
-      photoUrl: photoBlob ? '' : fd.get('photoUrl').trim(),
+      photoUrl: photoBlob ? '' : (safePhotoUrl || ''),
       tags: fd.get('tags').trim(),
-      sourceUrl: fd.get('sourceUrl').trim(),
+      sourceUrl: safeSourceUrl || '',
       ingredients: fd.get('ingredients').trim(),
       steps: fd.get('steps').trim(),
       ratings: {},
@@ -315,4 +351,4 @@ async function addMissingIngredientsForRange(rangeStart, rangeEnd) {
   return added;
 }
 
-window.HD_RECIPES = { renderRecipesTab };
+window.HD_RECIPES = { renderRecipesTab, cleanupPhotoUrls };

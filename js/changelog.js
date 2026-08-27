@@ -1,4 +1,4 @@
-const APP_VERSION = '2.2.2';
+const APP_VERSION = '2.3.1';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,17 @@ const APP_VERSION = '2.2.2';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {
+    version: '2.3.1',
+    date: '2026-08-27',
+    notes: [
+      'Made backup restore validated and transactional so a bad file cannot leave the dashboard half-erased; backups now include settings and layout.',
+      'Fixed duplicate points from completing, undoing, and recompleting the same task, and blocked duplicate same-day chore credit.',
+      'Fixed monthly schedules on the 29th–31st skipping into the following month.',
+      'Hardened user names and pasted links before rendering them.',
+      'Fixed photo-preview memory accumulating during long tablet sessions and requested persistent browser storage.',
+    ],
+  },
   {
     version: '2.2.2',
     date: '2026-08-24',

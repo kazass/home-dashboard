@@ -1,3 +1,6 @@
+const BACKUP_VERSION = 2;
+const BACKUP_PREFERENCE_KEYS = ['hd-settings', 'hd-layout'];
+
 function blobToDataURL(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -8,7 +11,11 @@ function blobToDataURL(blob) {
 }
 
 async function dataURLToBlob(dataUrl) {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+    throw new Error('Backup contains an invalid photo.');
+  }
   const res = await fetch(dataUrl);
+  if (!res.ok) throw new Error('Backup photo could not be decoded.');
   return res.blob();
 }
 
@@ -32,8 +39,98 @@ async function deserializeRecord(record) {
   return copy;
 }
 
+function isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateBackupData(data) {
+  if (!isPlainObject(data) || !isPlainObject(data.stores)) {
+    throw new Error('This file does not look like a Home Dashboard backup.');
+  }
+  const version = Number(data.version || 1);
+  if (!Number.isInteger(version) || version < 1 || version > BACKUP_VERSION) {
+    throw new Error(`Backup version ${data.version} is not supported by this app.`);
+  }
+
+  for (const store of HD_DB.STORES) {
+    const records = data.stores[store] || [];
+    if (!Array.isArray(records)) throw new Error(`Backup store "${store}" is invalid.`);
+    const ids = new Set();
+    for (const record of records) {
+      if (!isPlainObject(record) || typeof record.id !== 'string'
+          || !/^[A-Za-z0-9._:-]{1,200}$/.test(record.id)) {
+        throw new Error(`Backup store "${store}" contains an invalid record ID.`);
+      }
+      if (ids.has(record.id)) throw new Error(`Backup store "${store}" contains duplicate IDs.`);
+      ids.add(record.id);
+    }
+  }
+
+  if (data.preferences !== undefined) {
+    if (!isPlainObject(data.preferences)) throw new Error('Backup preferences are invalid.');
+    for (const key of BACKUP_PREFERENCE_KEYS) {
+      const value = data.preferences[key];
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        throw new Error(`Backup preference "${key}" is invalid.`);
+      }
+      if (typeof value === 'string') {
+        const parsed = JSON.parse(value);
+        if (!isPlainObject(parsed)) throw new Error(`Backup preference "${key}" is invalid.`);
+      }
+    }
+  }
+  return version;
+}
+
+function validatePreparedRecords(recordsByStore) {
+  const requiredStrings = {
+    events: ['title', 'date'], notes: ['text'], shoppingItems: ['item'],
+    homeWork: ['title'], scheduling: ['title'], ideas: ['title'], plants: ['name'],
+    recipes: ['title'], mealPlans: ['date', 'recipeId'], goals: ['title'],
+    completions: ['itemType', 'itemId', 'person'], activities: ['name'],
+  };
+  for (const [store, fields] of Object.entries(requiredStrings)) {
+    for (const record of recordsByStore[store] || []) {
+      for (const field of fields) {
+        if (typeof record[field] !== 'string') {
+          throw new Error(`Backup store "${store}" contains an invalid "${field}" field.`);
+        }
+      }
+    }
+  }
+
+  for (const record of recordsByStore.photos || []) {
+    if (!(record.photoBlob instanceof Blob)) throw new Error('Backup contains an invalid screensaver photo.');
+  }
+  for (const store of ['plants', 'recipes']) {
+    for (const record of recordsByStore[store] || []) {
+      if (record.photoBlob != null && !(record.photoBlob instanceof Blob)) {
+        throw new Error(`Backup store "${store}" contains an invalid photo.`);
+      }
+    }
+  }
+}
+
+function capturePreferences() {
+  return Object.fromEntries(BACKUP_PREFERENCE_KEYS.map((key) => [key, localStorage.getItem(key)]));
+}
+
+function applyPreferences(preferences) {
+  if (!preferences) return;
+  for (const key of BACKUP_PREFERENCE_KEYS) {
+    if (!(key in preferences)) continue;
+    if (preferences[key] === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, preferences[key]);
+  }
+}
+
 async function buildBackupData() {
-  const data = { version: 1, exportedAt: new Date().toISOString(), stores: {} };
+  const data = {
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    stores: {},
+    preferences: capturePreferences(),
+  };
   for (const store of HD_DB.STORES) {
     const records = await HD_DB.dbGetAll(store);
     data.stores[store] = await Promise.all(records.map(serializeRecord));
@@ -57,13 +154,24 @@ async function exportBackup() {
 async function importBackup(file) {
   const text = await file.text();
   const data = JSON.parse(text);
-  if (!data || !data.stores) throw new Error('This file doesn\'t look like a home-dashboard backup.');
+  validateBackupData(data);
+
+  // Decode every record before touching current data. This catches malformed
+  // photos and other import errors while the existing database is still safe.
+  const prepared = {};
   for (const store of HD_DB.STORES) {
-    await HD_DB.dbClear(store);
     const records = data.stores[store] || [];
-    for (const record of records) {
-      await HD_DB.dbPut(store, await deserializeRecord(record));
-    }
+    prepared[store] = await Promise.all(records.map(deserializeRecord));
+  }
+  validatePreparedRecords(prepared);
+
+  const previousPreferences = capturePreferences();
+  try {
+    applyPreferences(data.preferences);
+    await HD_DB.dbReplaceAll(prepared);
+  } catch (err) {
+    applyPreferences(previousPreferences);
+    throw err;
   }
 }
 
@@ -124,7 +232,7 @@ function openBackupModal() {
         <button class="modal-close" id="backup-close-btn" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="text-muted">Everything lives only on this tablet's browser storage. Export a backup file now and then so a tablet reset can't wipe your data.</p>
+        <p class="text-muted">Everything lives only on this tablet's browser storage. Export a backup file now and then so a tablet reset can't wipe your data. Backups include app data, photos, settings, and dashboard layout.</p>
         <button type="button" id="export-backup-btn">Export backup file</button>
         <button type="button" id="export-ics-btn">Export calendar (.ics)</button>
         <p class="text-muted">One-way export of calendar events for importing into Google/Apple/Outlook calendar. Recurring chores/plans aren't included.</p>
@@ -179,4 +287,7 @@ function openBackupModal() {
   });
 }
 
-window.HD_BACKUP = { openBackupModal, exportBackup, importBackup, buildBackupData, buildIcs, exportIcs };
+window.HD_BACKUP = {
+  openBackupModal, exportBackup, importBackup, buildBackupData, buildIcs, exportIcs,
+  validateBackupData, BACKUP_VERSION,
+};
