@@ -296,6 +296,10 @@ async function renderCalendar(container, onDayClick) {
   }
 
   container.querySelectorAll('[data-nav]').forEach((btn) => {
+    const stepLabel = CAL_STATE.mode === 'month' ? 'month' : CAL_STATE.mode === 'week' ? 'week' : '7 days';
+    btn.setAttribute('aria-label', btn.dataset.nav === 'today'
+      ? 'Show today in the calendar'
+      : `${btn.dataset.nav === 'prev' ? 'Previous' : 'Next'} ${stepLabel}`);
     btn.addEventListener('click', () => {
       const nav = btn.dataset.nav;
       if (nav === 'today') {
@@ -313,6 +317,8 @@ async function renderCalendar(container, onDayClick) {
   });
 
   container.querySelectorAll('[data-mode]').forEach((btn) => {
+    btn.setAttribute('aria-label', `${btn.textContent.trim()} view`);
+    btn.setAttribute('aria-pressed', String(btn.dataset.mode === CAL_STATE.mode));
     btn.addEventListener('click', () => {
       CAL_STATE.mode = btn.dataset.mode;
       renderCalendar(container, onDayClick);
@@ -320,7 +326,17 @@ async function renderCalendar(container, onDayClick) {
   });
 
   container.querySelectorAll('[data-date]').forEach((cell) => {
+    const fullDate = parseYMD(cell.dataset.date).toLocaleDateString('en', { dateStyle: 'full' });
+    cell.setAttribute('role', 'button');
+    cell.setAttribute('tabindex', '0');
+    cell.setAttribute('aria-label', `Open ${fullDate}`);
+    if (cell.dataset.date === todayKey) cell.setAttribute('aria-current', 'date');
     cell.addEventListener('click', () => onDayClick(cell.dataset.date));
+    cell.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      if (!event.repeat) cell.click();
+    });
   });
 }
 

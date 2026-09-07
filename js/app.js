@@ -1,6 +1,7 @@
 (() => {
+  const icon=(name)=>HD_ICONS.svg(name);
   const esc=value=>HD_CAL.escapeHtml(String(value??''));
-  let person='Everyone', activeRoute='', sequence=0, toastTimer=null, lastProfile='';
+  let person='Everyone', activeRoute='', sequence=0, toastTimer=null, lastProfile='', lastRoute='';
   const main=()=>document.getElementById('main');
   function closeDialog(){
     document.querySelectorAll('.modal-overlay').forEach(el=>{el.cleanupPhotoUrls?.();el.remove();});
@@ -8,7 +9,7 @@
   function dialog(title,html){
     closeDialog();
     const overlay=document.createElement('div');overlay.className='modal-overlay';
-    overlay.innerHTML=`<section class="modal v3-dialog" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header class="modal-header"><h2>${esc(title)}</h2><button class="modal-close" aria-label="Close dialog">×</button></header><div class="modal-body">${html}</div></section>`;
+    overlay.innerHTML=`<section class="modal v3-dialog" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header class="modal-header"><h2>${esc(title)}</h2><button class="modal-close" aria-label="Close dialog">${icon('close')}</button></header><div class="modal-body">${html}</div></section>`;
     document.body.append(overlay);overlay.querySelector('.modal-close').onclick=closeDialog;overlay.onclick=e=>{if(e.target===overlay)closeDialog();};
     return overlay;
   }
@@ -23,7 +24,7 @@
   }
   function quickAdd(type='task',record=null,after=refresh){
     const title=record?'Edit item':`Add ${type==='shopping'?'shopping item':type}`;
-    const task=['task','chore'].includes(type), date=record?.dueDate||HD_TODAY.chosenDate();
+    const task=['task','chore'].includes(type), date=record?(record.dueDate||''):HD_TODAY.chosenDate();
     const overlay=dialog(title,`<form id="v3-add-form"><label>${type==='note'?'Note':type==='shopping'?'Item':'Title'}<input name="title" required maxlength="500" placeholder="${type==='shopping'?'Milk, bread, something good…':type==='note'?'Something to remember…':'What needs doing?'}" value="${esc(record?.title||record?.item||record?.text||'')}"></label>
       ${task?`<div class="v3-form-grid"><label>Assigned to<select name="person">${HD_SETTINGS.assigneeOptionsHtml(record?.assignedTo||(person==='Everyone'?'Both':person))}</select></label>${type==='task'?`<label>Due date<input type="date" name="date" value="${date}"></label>`:`<label>Every<div class="v3-inline-fields"><input name="interval" type="number" min="1" max="365" value="${record?.intervalCount||1}" required aria-label="Repeat interval"><select name="unit" aria-label="Repeat unit">${['days','weeks','months'].map(u=>`<option ${u===(record?.intervalUnit||'weeks')?'selected':''}>${u}</option>`).join('')}</select></div></label>`}</div><details class="v3-details"><summary>More options</summary><label>Notes<textarea name="notes">${esc(record?.notes||'')}</textarea></label><label>Points<input name="points" type="number" min="0" max="1000" value="${record?.points??1}"></label>${type==='chore'?`<label class="v3-checkbox-label"><input type="checkbox" name="rotate" ${record?.rotate?'checked':''}> Rotate between household members</label>`:''}</details>`:''}
       ${type==='shopping'?'<div class="v3-form-grid"><label>Quantity<input name="qty" placeholder="e.g. 2 litres"></label><label>Category<input name="category" placeholder="e.g. Groceries"></label></div>':''}
@@ -35,7 +36,7 @@
       else if(type==='note')await HD_DB.dbPut('notes',{...base,text:title});
       else {
         const item={...base,title,assignedTo:fd.get('person'),notes:fd.get('notes')||'',points:Number(fd.get('points')),currentStreak:record?.currentStreak||0};
-        if(type==='chore')await HD_DB.dbPut('scheduling',{...item,category:'chore',recurrenceKind:'interval',anchorDate:record?.anchorDate||HD_CAL.ymd(new Date()),intervalCount:Number(fd.get('interval')),intervalUnit:fd.get('unit'),rotate:fd.get('rotate')==='on',lastDoneAt:record?.lastDoneAt||null,completedCount:record?.completedCount||0});
+        if(type==='chore')await HD_DB.dbPut('scheduling',{...item,category:'chore',recurrenceKind:'interval',anchorDate:record?.anchorDate||HD_TODAY.chosenDate(),intervalCount:Number(fd.get('interval')),intervalUnit:fd.get('unit'),rotate:fd.get('rotate')==='on',lastDoneAt:record?.lastDoneAt||null,completedCount:record?.completedCount||0});
         else await HD_DB.dbPut('homeWork',{...item,status:record?.status||'todo',dueDate:fd.get('date')||null,postponedUntil:null});
       }
       closeDialog();await after();toast(record?'Changes saved.':'Added.');
@@ -80,23 +81,27 @@
   }
   function header(){
     const el=document.getElementById('v3-header'),date=new Date();
-    el.innerHTML=`<a class="v3-brand" href="#dashboard" aria-label="Home dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h14V10M9 20v-7h6v7"/></svg><span>home<span class="v3-brand-dot">.</span></span></a><div class="v3-header-date">${date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div><div class="v3-header-actions"><div class="v3-person-filter" aria-label="Household filter">${['Everyone',...HD_SETTINGS.getUserNames()].map(name=>`<button data-person="${esc(name)}" class="${name===person?'active':''}" aria-pressed="${name===person}">${esc(name)}</button>`).join('')}</div><button class="primary" id="quick-add">+ Add</button><button class="text-button" id="edit-layout">Edit layout</button></div>`;
-    el.querySelector('#quick-add').onclick=addMenu;el.querySelector('#edit-layout').onclick=editLayout;
+    if(!['Everyone',...HD_SETTINGS.getUserNames()].includes(person))person='Everyone';
+    el.innerHTML=`<div class="v3-header-main"><a class="v3-brand" href="#dashboard" aria-label="Home dashboard">${icon('home')}<span>home.</span></a><div class="v3-header-date">${date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div><div class="v3-header-actions"><button class="icon-button" id="header-search" aria-label="Search everything">${icon('search')}</button><button id="edit-layout">Edit layout</button><button class="primary" id="quick-add">${icon('plus')}<span>Add</span></button></div></div><div id="v3-context-bar"><div class="v3-context-title"><h1 id="workspace-title">Today</h1><p id="workspace-caption">A shared view of your day.</p></div><div class="v3-person-filter" aria-label="Household filter">${['Everyone',...HD_SETTINGS.getUserNames()].map(name=>`<button data-person="${esc(name)}" class="${name===person?'active':''}" aria-pressed="${name===person}">${name==='Everyone'?icon('people'):`<span aria-hidden="true" class="v3-avatar" style="--person-color:${HD_SETTINGS.getPersonColor(name)||'#64766b'}">${esc(name.slice(0,1))}</span>`}<span>${esc(name)}</span></button>`).join('')}</div></div>`;
+    el.querySelector('#quick-add').onclick=addMenu;el.querySelector('#edit-layout').onclick=editLayout;el.querySelector('#header-search').onclick=()=>HD_SEARCH.openSearchModal();
     el.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{person=b.dataset.person;header();refresh();});
   }
   async function renderRoute(){
     const current=++sequence;
-    const route=location.hash.slice(1)||'dashboard', root=route.split('/')[0];
+    const route=location.hash.slice(1)||'dashboard', root=route.split('/')[0],navigationChanged=route!==lastRoute;
+    lastRoute=route;
     closeDialog();
     if(activeRoute==='garden')HD_GARDEN.cleanupPhotoUrls();
     if(['recipes','meals'].includes(activeRoute))HD_RECIPES.cleanupPhotoUrls();
     HD_STATS.closeStatsPanel();activeRoute=root;
     const host=main();host.className='v3-main';host.dataset.route=root;
     document.querySelectorAll('#nav a').forEach(a=>{const id=a.dataset.route;const selected=id===root||(id==='kitchen'&&['shopping','recipes','meals'].includes(root))||(id==='more'&&!['dashboard','calendar','tasks','kitchen','shopping','recipes','meals'].includes(root));a.classList.toggle('active',selected);if(selected)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-    document.querySelector('.v3-person-filter').hidden=!['dashboard','tasks'].includes(root);
+    document.getElementById('v3-context-bar').hidden=!['dashboard','tasks'].includes(root);
+    document.getElementById('workspace-title').textContent=root==='tasks'?'Tasks':'Today';
+    document.getElementById('workspace-caption').textContent=root==='tasks'?'A little progress, together.':'A shared view of your day.';
     document.getElementById('edit-layout').hidden=root!=='dashboard';
     if(root==='dashboard')await HD_TODAY.render(host);
-    else if(root==='tasks'&&route!=='tasks/plans')await HD_TODAY.render(host,{full:true,type:route.split('/')[1]||'todo'});
+    else if(root==='tasks'&&route!=='tasks/plans')await HD_TODAY.render(host,{full:true,type:route.split('/')[1]||'all'});
     else if(route==='tasks/plans'){
       host.innerHTML='<div class="v3-page-heading"><h1>Recurring plans</h1><a href="#tasks">Back to tasks</a></div><section class="v3-surface" id="plans-content"></section>';HD_SCHEDULING.renderPlansContent(host.querySelector('#plans-content'));
     }else if(root==='calendar'){
@@ -107,7 +112,7 @@
     else if(root==='more'||root==='kitchen'){
       const kitchen=[{id:'shopping',title:'Shopping',description:'The list for your next trip to the shops'},{id:'recipes',title:'Recipes',description:'Good food, worth making again'},{id:'meals',title:'Meal plan',description:'A week of something delicious'}];
       const list=root==='kitchen'?kitchen:HD_WORKSPACE.features.filter(f=>!f.primary);
-      host.innerHTML=`<div class="v3-page-heading"><div><h1>${root==='kitchen'?'Kitchen':'More for your home'}</h1><p>${root==='kitchen'?'From a good idea to the dinner table.':'All the little things that make a home.'}</p></div>${root==='more'?'<button id="search-all">Search everything</button>':''}</div><div class="v3-feature-grid">${list.map(f=>`<a class="v3-surface v3-feature" href="#${f.id}"><span class="v3-feature-arrow">↗</span><h2>${f.title}</h2><p>${f.description}</p></a>`).join('')}</div>`;
+      host.innerHTML=`<div class="v3-page-heading"><div><h1>${root==='kitchen'?'Kitchen':'More for your home'}</h1><p>${root==='kitchen'?'From a good idea to the dinner table.':'All the little things that make a home.'}</p></div>${root==='more'?'<button id="search-all">Search everything</button>':''}</div><div class="v3-feature-grid">${list.map(f=>`<a class="v3-surface v3-feature" href="#${f.id}"><span class="v3-feature-icon">${icon(f.id==='recipes'||f.id==='meals'?'kitchen':f.id)}</span><span class="v3-feature-arrow">${icon('arrow')}</span><h2>${f.title}</h2><p>${f.description}</p></a>`).join('')}</div>`;
       host.querySelector('#search-all')?.addEventListener('click',()=>HD_SEARCH.openSearchModal());
     }else if(root==='about'){
       host.innerHTML='<div class="v3-page-heading"><h1>Home dashboard</h1></div><section class="v3-surface"><h2>Version '+esc(HD_CHANGELOG.APP_VERSION)+'</h2><button id="release-notes">Release notes</button></section>';
@@ -127,6 +132,7 @@
     }
     if(current!==sequence)return;
     enhance(host);
+    if(navigationChanged)window.scrollTo({top:0,left:0,behavior:'instant'});
   }
   function enhance(host){
     host.querySelectorAll('input:not([aria-label]),textarea:not([aria-label]),select:not([aria-label])').forEach(input=>{if(!input.closest('label'))input.setAttribute('aria-label',input.placeholder||input.name||'Choose an option');});
@@ -136,24 +142,39 @@
   function refresh(){return run(renderRoute);}
   let previousFocus=null;
   function setupDialogs(){
-    const observer=new MutationObserver(records=>{
-      for(const record of records)for(const el of record.addedNodes){
-        if(!(el instanceof Element))continue;
-        if(el.matches('.modal-overlay')){
-          document.querySelectorAll('.modal-overlay').forEach(other=>{if(other!==el){other.cleanupPhotoUrls?.();other.remove();}});
-          HD_STATS.closeStatsPanel();previousFocus=document.activeElement;
-          const modal=el.querySelector('.modal');if(modal){modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label',modal.querySelector('h2,h3')?.textContent||'Dialog');}
-          enhance(el);requestAnimationFrame(()=>el.querySelector('input:not([type="checkbox"]),select,textarea,button')?.focus());
-        }
+    let currentOverlay=null;
+    const synchronize=()=>{
+      const overlays=[...document.querySelectorAll('.modal-overlay')],overlay=overlays.at(-1),app=document.getElementById('app');
+      if(!overlay){
+        app.inert=false;document.body.classList.remove('dialog-open');currentOverlay=null;
+        if(previousFocus?.isConnected)previousFocus.focus();previousFocus=null;return;
       }
-      if(!document.querySelector('.modal-overlay')&&previousFocus){if(previousFocus.isConnected)previousFocus.focus();previousFocus=null;}
-    });observer.observe(document.body,{childList:true});
+      if(currentOverlay!==overlay){
+        if(!currentOverlay)previousFocus=document.activeElement;
+        currentOverlay=overlay;overlays.slice(0,-1).forEach(other=>{other.cleanupPhotoUrls?.();other.remove();});HD_STATS.closeStatsPanel();
+      }
+      app.inert=true;document.body.classList.add('dialog-open');
+      const modal=overlay.querySelector('.modal');
+      if(!modal)return;
+      if(modal.dataset.accessibleReady)return;
+      modal.dataset.accessibleReady='true';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+      modal.setAttribute('aria-label',modal.querySelector('h2,h3')?.textContent||'Dialog');modal.tabIndex=-1;
+      enhance(overlay);
+      requestAnimationFrame(()=>{
+        if(!overlay.isConnected)return;
+        const visible=el=>el&&!el.disabled&&el.getClientRects().length;
+        const fields=[...overlay.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]),select,textarea')];
+        (fields.find(visible)||[...overlay.querySelectorAll('button')].find(visible)||modal).focus();
+      });
+    };
+    new MutationObserver(synchronize).observe(document.body,{childList:true,subtree:true});
     document.addEventListener('keydown',e=>{
       const overlay=document.querySelector('.modal-overlay');if(!overlay)return;
       if(e.key==='Escape'){e.preventDefault();closeDialog();return;}
       if(e.key==='Tab'){
         const focusable=[...overlay.querySelectorAll('button,input,select,textarea,a[href],summary')].filter(el=>!el.disabled&&el.getClientRects().length);
-        const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+        const first=focusable[0],last=focusable.at(-1);if(!first){e.preventDefault();return;}
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
       }
     });
   }
@@ -164,7 +185,7 @@
     document.body.classList.add('v3');
     const headerEl=document.createElement('header');headerEl.id='v3-header';document.getElementById('app').prepend(headerEl);
     HD_SETTINGS.applyAppearance();header();
-    document.getElementById('nav').innerHTML=HD_WORKSPACE.features.filter(f=>f.primary).map(f=>`<a href="#${f.id}" data-route="${f.id}">${f.title}</a>`).join('');
+    document.getElementById('nav').innerHTML=HD_WORKSPACE.features.filter(f=>f.primary).map(f=>`<a href="#${f.id}" data-route="${f.id}">${icon(f.id==='dashboard'?'home':f.id)}<span>${f.title}</span></a>`).join('');
     setupDialogs();refresh();HD_SCREENSAVER.initScreensaver();
     lastProfile=HD_WORKSPACE.profile();let resizeTimer;
     window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const next=HD_WORKSPACE.profile();if(next!==lastProfile){lastProfile=next;if(activeRoute==='dashboard')refresh();}},250);});

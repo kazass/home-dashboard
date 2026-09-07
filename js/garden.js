@@ -1,6 +1,6 @@
 let gardenPhotoUrls = [];
 
-function cleanupPhotoUrls() {
+function cleanupGardenPhotoUrls() {
   gardenPhotoUrls.forEach((url) => URL.revokeObjectURL(url));
   gardenPhotoUrls = [];
 }
@@ -132,9 +132,11 @@ async function renderGardenTab(main) {
   }
 
   async function refresh() {
+    if (!listEl.isConnected) return;
     const plants = await HD_DB.dbGetAll('plants');
+    if (!listEl.isConnected) return;
     plants.sort((a, b) => plantNextWaterDue(a) - plantNextWaterDue(b));
-    cleanupPhotoUrls();
+    cleanupGardenPhotoUrls();
 
     listEl.innerHTML = plants.length
       ? plants.map((p) => {
@@ -166,13 +168,36 @@ async function renderGardenTab(main) {
     listEl.querySelectorAll('[data-watered]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         btn.disabled = true;
-        const plant = plants.find((p) => p.id === btn.dataset.watered);
-        const wateredAt = new Date();
-        wateredAt.setHours(0, 0, 0, 0);
-        plant.lastWateredAt = wateredAt.getTime();
-        plant.postponedUntil = null;
-        await HD_DB.dbPut('plants', plant);
-        refresh();
+        const id = btn.dataset.watered;
+        try {
+          if (window.HD_ACTIONS) {
+            const undo = await HD_ACTIONS.change('plants', id, 'complete');
+            await refresh();
+            window.HD_UI?.toast(undo ? 'Plant watered.' : 'Already watered today.', undo ? async () => {
+              await HD_ACTIONS.undo(undo);
+              if (listEl.isConnected) await refresh();
+              else await window.HD_UI?.refresh();
+            } : null);
+          } else {
+            const plant = await HD_DB.dbGet('plants', id);
+            if (!plant) throw new Error('This plant no longer exists.');
+            const wateredAt = new Date();
+            wateredAt.setHours(0, 0, 0, 0);
+            plant.lastWateredAt = wateredAt.getTime();
+            plant.postponedUntil = null;
+            plant.updatedAt = Date.now();
+            await HD_DB.dbPut('plants', plant);
+            await refresh();
+          }
+          if (listEl.isConnected) {
+            [...listEl.querySelectorAll('[data-watered]')].find(button => button.dataset.watered === id)?.focus();
+          }
+        } catch (error) {
+          if (window.HD_UI) HD_UI.toast(error.message || 'Could not save watering. Please try again.');
+          else alert(error.message || 'Could not save watering. Please try again.');
+        } finally {
+          if (btn.isConnected) btn.disabled = false;
+        }
       });
     });
 
@@ -290,5 +315,5 @@ async function renderGardenTab(main) {
 }
 
 window.HD_GARDEN = {
-  renderGardenTab, getPlantWaterItemsInRange, plantNextWaterDue, compressImage, cleanupPhotoUrls,
+  renderGardenTab, getPlantWaterItemsInRange, plantNextWaterDue, compressImage, cleanupPhotoUrls: cleanupGardenPhotoUrls,
 };

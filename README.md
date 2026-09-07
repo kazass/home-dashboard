@@ -2,6 +2,10 @@
 
 This branch preserves the existing dashboard while adding a tablet-friendly Today workspace. The original `main` branch and its GitHub Pages deployment are unchanged.
 
+## Visual direction
+
+An editorial Today view pairs Instrument Serif headings with Manrope controls, a deep agenda panel, quieter task rows and compact dinner/garden cards. All fonts and icons are local and work offline. Five semantic palettes keep layout and interaction consistent. See [DESIGN.md](DESIGN.md) for component rules and the feature roadmap.
+
 ## What is included
 
 - Today priorities, a seven-day strip and Everyone/person filters.

@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'hd-settings';
 const DEFAULT_SETTINGS = {
   idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '',
-  personColors: { Kasparas: '#4f7fc7', Izolda: '#c74f8f' },
+  personColors: { Kasparas: '#6c8952', Izolda: '#b29654' },
   userNames: ['Kasparas', 'Izolda'],
   dailyStatusEnabled: true,
   hiddenCards: [],
@@ -56,6 +56,20 @@ const THEMES = {
     dark: { '--bg': '#121417', '--surface': '#1b1e22', '--text': '#e9ebee', '--text-muted': '#99a2ab', '--accent': '#6f95ab', '--accent-text': '#0d1013', '--border': '#2a2e34', '--today-bg': 'rgba(111, 149, 171, 0.15)', '--type-recurring': '#4d8f8f' },
   },
 };
+
+const POLISHED_PALETTES = {
+  forest: {bg:'#f4f6f3',text:'#152f26',muted:'#616e66',accent:'#1b4437',border:'#dfe6df',soft:'#eaf0dc',warm:'#faf4e4',hero:'#193c32'},
+  ocean: {bg:'#f0f5f7',text:'#183341',muted:'#546c78',accent:'#205c74',border:'#dbe6ec',soft:'#e3eff0',warm:'#eef2e8',hero:'#204352'},
+  sunset: {bg:'#faf3ef',text:'#3c2a23',muted:'#7a655a',accent:'#9a4a30',border:'#ecddd4',soft:'#f2e5d2',warm:'#fff2de',hero:'#653d2c'},
+  lavender: {bg:'#f5f2f8',text:'#352b43',muted:'#74667f',accent:'#665081',border:'#e5deed',soft:'#eee8f3',warm:'#f4edee',hero:'#463452'},
+  slate: {bg:'#f1f3f5',text:'#263541',muted:'#63717b',accent:'#3d5668',border:'#dee4e8',soft:'#e4eaec',warm:'#eef0ed',hero:'#253c4b'},
+};
+for(const [id,p] of Object.entries(POLISHED_PALETTES)){
+  Object.assign(THEMES[id].light,{'--bg':p.bg,'--text':p.text,'--text-muted':p.muted,'--accent':p.accent,'--border':p.border,'--today-bg':p.soft,'--surface-soft':p.soft,'--surface-warm':p.warm,'--hero-bg':p.hero,'--hero-text':'#f4f8ef'});
+  Object.assign(THEMES[id].dark,{'--surface-soft':'color-mix(in srgb, var(--surface) 80%, var(--accent) 20%)','--surface-warm':'color-mix(in srgb, var(--surface) 88%, #b19461 12%)','--hero-bg':p.hero,'--hero-text':'#f4f8ef'});
+  THEMES[id].swatch=p.accent;
+}
+Object.assign(THEMES.forest.dark,{'--bg':'#101c18','--surface':'#192a23','--text':'#e9f0e6','--text-muted':'#a9bbb0','--accent':'#c3d7a3','--accent-text':'#18332a','--border':'#2c4337','--today-bg':'#283d30'});
 
 function getSettings() {
   try {
@@ -177,11 +191,9 @@ async function migratePersonNameInStores(oldName, newName) {
 // Shared badge renderer so "assigned to" shows as a colored chip for
 // Kasparas/Izolda everywhere in the app, instead of plain text.
 function personBadgeHtml(name) {
-  const label = name || 'Both';
-  const color = getPersonColor(label);
-  const safeLabel = HD_CAL.escapeHtml(label);
-  if (!color) return `<span class="badge">${safeLabel}</span>`;
-  return `<span class="badge person-badge" style="background:${color}26;color:${color};border:1px solid ${color}66">${safeLabel}</span>`;
+  const label=name||'Both',color=getPersonColor(label),safeLabel=HD_CAL.escapeHtml(label);
+  if(!color)return `<span class="badge">${safeLabel}</span>`;
+  return `<span class="badge person-badge"><span aria-hidden="true" class="v3-avatar" style="--person-color:${color}">${HD_CAL.escapeHtml(label.slice(0,1))}</span>${safeLabel}</span>`;
 }
 
 // Converts a normal open.spotify.com link (playlist/album/track/artist/show/
@@ -433,6 +445,11 @@ function openSettingsModal() {
     refreshPhotoThumbs();
   });
 
+  if(window.HD_UI){
+    overlay.querySelector('.modal-header h3').textContent='Household & display';
+    for(const selector of ['.theme-swatches','.accent-swatches','#reset-layout-btn','.card-visibility-row','#daily-status-checkbox'])overlay.querySelector(selector)?.closest('.settings-field')?.remove();
+    overlay.querySelector('#spotify-url-status').textContent='Your playlist appears in the Music widget.';
+  }
   refreshPhotoThumbs();
 }
 
