@@ -5,7 +5,7 @@ let editMode = false;
 
 function getLayout() {
   try {
-    const raw = localStorage.getItem(LAYOUT_KEY);
+    const raw = (window.HD_STORAGE || localStorage).getItem(LAYOUT_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -14,7 +14,7 @@ function getLayout() {
 
 function saveLayout(patch) {
   const merged = { ...getLayout(), ...patch };
-  localStorage.setItem(LAYOUT_KEY, JSON.stringify(merged));
+  (window.HD_STORAGE || localStorage).setItem(LAYOUT_KEY, JSON.stringify(merged));
   return merged;
 }
 
@@ -39,7 +39,7 @@ function saveSize(id, size) {
 }
 
 function resetLayout() {
-  localStorage.removeItem(LAYOUT_KEY);
+  (window.HD_STORAGE || localStorage).removeItem(LAYOUT_KEY);
 }
 
 function isEditMode() {

@@ -6,7 +6,7 @@ async function renderHomeWorkContent(main) {
       <input name="when" placeholder="When (optional, e.g. next winter)">
       <input type="date" name="dueDate" title="Due date (optional) — lets this task appear in the daily status popup">
       <input type="number" name="points" min="0" value="1" style="width:60px" placeholder="Pts">
-      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml()}</select>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add task</button>
     </form>
@@ -22,7 +22,7 @@ async function renderHomeWorkContent(main) {
         <input name="when" value="${HD_CAL.escapeHtml(t.when || '')}" placeholder="When (optional)">
         <input type="date" name="dueDate" value="${t.dueDate || ''}" title="Due date (optional)">
         <input type="number" name="points" min="0" value="${t.points || 1}" style="width:60px" placeholder="Pts">
-        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === t.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml(t.assignedTo)}</select>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(t.notes || '')}</textarea>
         <div class="modal-form-actions">
           <button type="button" data-cancel-edit>Cancel</button>
@@ -82,7 +82,11 @@ async function renderHomeWorkContent(main) {
           }
         } else {
           task.completedAt = null;
+          task.currentStreak = Math.max(0, (task.currentStreak || 0) - 1);
           await HD_DB.dbPut('homeWork', task);
+          if (window.HD_POINTS) {
+            await HD_POINTS.deleteCompletionsForItem('homework', task.id);
+          }
         }
         refresh();
       });
