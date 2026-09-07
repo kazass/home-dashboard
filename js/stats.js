@@ -9,13 +9,13 @@ async function buildStatsHtml() {
   const allCompletions = await HD_DB.dbGetAll('completions');
   const weekStart = HD_CAL.startOfWeek(now).getTime();
 
-  // Per-person chore completions. Rotating chores only have one current
-  // "assignedTo", so their whole count attributes to whoever holds it now —
-  // a simplification, not a true per-turn split.
-  const byPerson = {};
-  for (const name of HD_SETTINGS.getUserNames()) byPerson[name] = 0;
-  for (const c of chores) {
-    if (byPerson[c.assignedTo] !== undefined) byPerson[c.assignedTo] += c.completedCount || 0;
+  const byPerson = Object.fromEntries(HD_SETTINGS.getUserNames().map(name => [name, 0]));
+  const seen = new Set();
+  for (const completion of allCompletions) {
+    const key = `${completion.itemId}:${completion.date}`;
+    if (completion.itemType !== 'chore' || seen.has(key)) continue;
+    seen.add(key);
+    if (byPerson[completion.person] !== undefined) byPerson[completion.person]++;
   }
   const maxCount = Math.max(1, ...Object.values(byPerson));
 
@@ -139,4 +139,4 @@ function initStatsSwipe() {
   document.body.appendChild(tab);
 }
 
-window.HD_STATS = { openStatsPanel, closeStatsPanel, initStatsSwipe };
+window.HD_STATS = { openStatsPanel, closeStatsPanel, initStatsSwipe, buildStatsHtml };

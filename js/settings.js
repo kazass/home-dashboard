@@ -59,7 +59,7 @@ const THEMES = {
 
 function getSettings() {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = (window.HD_STORAGE || localStorage).getItem(SETTINGS_KEY);
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -68,7 +68,7 @@ function getSettings() {
 
 function saveSettings(patch) {
   const merged = { ...getSettings(), ...patch };
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+  (window.HD_STORAGE || localStorage).setItem(SETTINGS_KEY, JSON.stringify(merged));
   return merged;
 }
 
@@ -199,7 +199,9 @@ function spotifyEmbedUrl(rawUrl) {
 function applyAppearance() {
   const settings = getSettings();
   const theme = THEMES[settings.theme] || THEMES.forest;
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = settings.mode === 'dark' || (settings.mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.mode = isDark ? 'dark' : 'light';
+  document.documentElement.dataset.textSize = settings.textSize || 'standard';
   const vars = isDark ? theme.dark : theme.light;
   const root = document.documentElement.style;
   for (const [key, value] of Object.entries(vars)) root.setProperty(key, value);

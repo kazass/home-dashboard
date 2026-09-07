@@ -1,8 +1,13 @@
-const CACHE_NAME = 'home-dashboard-v28';
+const CACHE_NAME = 'home-dashboard-v3-redesign-1';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
+  './css/redesign.css',
+  './js/runtime.js',
+  './js/actions.js',
+  './js/workspace.js',
+  './js/today.js',
   './js/app.js',
   './js/db.js',
   './js/weather.js',
@@ -45,7 +50,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('home-dashboard-v3-redesign-') && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

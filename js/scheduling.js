@@ -80,6 +80,7 @@ function occurrencesInRange(schedule, rangeStart, rangeEnd) {
 // Chores track completion, so their due date resets from lastDoneAt rather than
 // the fixed calendar grid used for events.
 function choreNextDue(schedule) {
+  if (schedule.postponedUntil) return HD_CAL.parseYMD(schedule.postponedUntil);
   if (schedule.lastDoneAt) {
     return addUnits(new Date(schedule.lastDoneAt), schedule.intervalCount, schedule.intervalUnit);
   }

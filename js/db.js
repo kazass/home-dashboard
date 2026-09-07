@@ -1,4 +1,4 @@
-const DB_NAME = 'home-dashboard';
+const DB_NAME = window.HD_DATABASE_NAME || 'home-dashboard';
 const DB_VERSION = 4;
 const STORES = [
   'events', 'notes', 'shoppingItems', 'homeWork', 'scheduling',

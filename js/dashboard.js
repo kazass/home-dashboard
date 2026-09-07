@@ -376,4 +376,4 @@ async function renderDashboardTab(main) {
   }
 }
 
-window.HD_DASHBOARD = { renderDashboardTab };
+window.HD_DASHBOARD = { renderDashboardTab, openEventModal, renderTripCountdown };

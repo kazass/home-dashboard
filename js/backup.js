@@ -119,15 +119,15 @@ function validatePreparedRecords(recordsByStore) {
 }
 
 function capturePreferences() {
-  return Object.fromEntries(BACKUP_PREFERENCE_KEYS.map((key) => [key, localStorage.getItem(key)]));
+  return Object.fromEntries(BACKUP_PREFERENCE_KEYS.map((key) => [key, (window.HD_STORAGE || localStorage).getItem(key)]));
 }
 
 function applyPreferences(preferences) {
   if (!preferences) return;
   for (const key of BACKUP_PREFERENCE_KEYS) {
     if (!(key in preferences)) continue;
-    if (preferences[key] === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, preferences[key]);
+    if (preferences[key] === null) (window.HD_STORAGE || localStorage).removeItem(key);
+    else (window.HD_STORAGE || localStorage).setItem(key, preferences[key]);
   }
 }
 

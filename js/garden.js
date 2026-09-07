@@ -37,6 +37,7 @@ function compressImage(file, maxDim = 800, quality = 0.8) {
 }
 
 function plantNextWaterDue(plant) {
+  if (plant.postponedUntil) return HD_CAL.parseYMD(plant.postponedUntil);
   if (plant.lastWateredAt) {
     return HD_SCHEDULING.addUnits(new Date(plant.lastWateredAt), plant.waterIntervalCount, plant.waterIntervalUnit);
   }
@@ -169,6 +170,7 @@ async function renderGardenTab(main) {
         const wateredAt = new Date();
         wateredAt.setHours(0, 0, 0, 0);
         plant.lastWateredAt = wateredAt.getTime();
+        plant.postponedUntil = null;
         await HD_DB.dbPut('plants', plant);
         refresh();
       });
