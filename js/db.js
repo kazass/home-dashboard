@@ -83,10 +83,17 @@ async function dbReplaceAll(recordsByStore) {
     tx.onerror = () => reject(tx.error || new Error('Database restore failed'));
     tx.onabort = () => reject(tx.error || new Error('Database restore was rolled back'));
 
-    for (const storeName of STORES) {
-      const store = tx.objectStore(storeName);
-      store.clear();
-      for (const record of recordsByStore[storeName] || []) store.put(record);
+    try {
+      for (const storeName of STORES) {
+        const store = tx.objectStore(storeName);
+        store.clear();
+        for (const record of recordsByStore[storeName] || []) store.put(record);
+      }
+    } catch (err) {
+      // put() can throw synchronously (e.g. DataCloneError). Rejecting the
+      // promise alone would leave earlier clears/writes free to commit.
+      tx.abort();
+      reject(err);
     }
   });
 }

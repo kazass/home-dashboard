@@ -47,13 +47,20 @@ function validateBackupData(data) {
   if (!isPlainObject(data) || !isPlainObject(data.stores)) {
     throw new Error('This file does not look like a Home Dashboard backup.');
   }
-  const version = Number(data.version || 1);
+  const version = data.version === undefined ? 1 : data.version;
   if (!Number.isInteger(version) || version < 1 || version > BACKUP_VERSION) {
     throw new Error(`Backup version ${data.version} is not supported by this app.`);
   }
 
+  if (!HD_DB.STORES.some((store) => Object.hasOwn(data.stores, store))) {
+    throw new Error('Backup contains no recognised application stores.');
+  }
   for (const store of HD_DB.STORES) {
-    const records = data.stores[store] || [];
+    // Version 2 exports every store. A missing store is a truncated backup,
+    // not permission to erase that part of the current database.
+    const present = Object.hasOwn(data.stores, store);
+    if (version >= 2 && !present) throw new Error(`Backup store "${store}" is missing.`);
+    const records = present ? data.stores[store] : [];
     if (!Array.isArray(records)) throw new Error(`Backup store "${store}" is invalid.`);
     const ids = new Set();
     for (const record of records) {
