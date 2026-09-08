@@ -16,6 +16,13 @@ test('concurrent completion credits a task once and Undo restores it',async()=>{
  assert.equal(results.filter(Boolean).length,1);assert.equal((await db.dbGetAll('completions')).length,1);
  await c.HD_ACTIONS.undo(results.find(Boolean));assert.equal((await db.dbGet('homeWork','task')).status,'todo');assert.equal((await db.dbGetAll('completions')).length,0);
 });
+test('shopping check and Undo do not require a recurrence or due date',async()=>{
+ const c=await app();await c.HD_DB.dbPut('shoppingItems',{id:'milk',item:'Milk',checked:false});
+ const undo=await c.HD_ACTIONS.change('shoppingItems','milk','check',true);
+ assert.equal((await c.HD_DB.dbGet('shoppingItems','milk')).checked,true);
+ await c.HD_ACTIONS.undo(undo);assert.equal((await c.HD_DB.dbGet('shoppingItems','milk')).checked,false);
+ assert.equal((await c.HD_DB.dbGetAll('completions')).length,0);
+});
 test('postpone and reassign are reversible, stale Undo cannot overwrite newer changes',async()=>{
  const c=await app(),db=c.HD_DB;await db.dbPut('homeWork',{id:'task',status:'todo',assignedTo:'Kasparas',dueDate:'2026-09-07'});
  const later=await c.HD_ACTIONS.change('homeWork','task','postpone','2026-09-08');

@@ -37,7 +37,7 @@
   async function change(store, id, action, value) {
     if (!['homeWork', 'scheduling', 'plants', 'shoppingItems'].includes(store)) throw new Error('Unsupported item.');
     const result = await transaction(store, id, (record, logs) => {
-      return HD_ACTION_CORE.transform(record, logs, {store,id,action,value,date:dateKey(),now:midnight(),names:HD_SETTINGS.getUserNames(),due:nextDue(store,record)});
+      return HD_ACTION_CORE.transform(record, logs, {store,id,action,value,date:dateKey(),now:midnight(),names:HD_SETTINGS.getUserNames(),due:action==='complete'?nextDue(store,record):''});
     });
     return result?.undo || null;
   }

@@ -16,9 +16,9 @@ async function harness(){
   return {DB,request,assets};
 }
 const post=data=>({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-async function device(request){
+async function device(request,indexedDB=new IDBFactory()){
   let prefs={userNames:['Kasparas','Izolda']};
-  const c=vm.createContext({indexedDB:new IDBFactory(),crypto,structuredClone,Blob,console,Date,Intl,fetch:request,navigator:{},setTimeout:()=>0,clearTimeout(){},setInterval(){},document:{querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}}});c.window=c;c.addEventListener=()=>{};
+  const c=vm.createContext({indexedDB,crypto,structuredClone,Blob,console,Date,Intl,fetch:request,navigator:{},setTimeout:()=>0,clearTimeout(){},setInterval(){},document:{querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}}});c.window=c;c.addEventListener=()=>{};
   c.HD_CAL={escapeHtml:s=>String(s),ymd:d=>d.toISOString().slice(0,10),parseYMD:s=>new Date(s+'T00:00:00')};
   c.HD_SETTINGS={getUserNames:()=>prefs.userNames,getSettings:()=>prefs,saveSettings:p=>{prefs={...prefs,...p}}};
   c.localStorage={setItem:(k,v)=>{prefs=JSON.parse(v)}};c.HD_UI={refresh:async()=>{}};
@@ -49,6 +49,12 @@ test('competing edits are preserved and visibly block sync',async()=>{
   await a.HD_DB.dbPut('notes',{id:'one',text:'Tablet'});await b.HD_DB.dbPut('notes',{id:'one',text:'Phone'});
   await a.HD_SYNC.sync();await b.HD_SYNC.sync();assert.match(b.HD_SYNC.getStatus(),/competing edit/);
   assert.equal((await b.HD_DB.dbGet('notes','one')).text,'Phone');assert.equal((await (await h.request('/api/state')).json()).records['notes/one'].text,'Tablet');
+});
+test('a second browser tab invalidates its cached snapshot after an incoming sync',async()=>{
+  const h=await harness(),shared=new IDBFactory(),a=await device(h.request,shared),tab=await device(h.request,shared),phone=await device(h.request);
+  await a.HD_DB.dbPut('notes',{id:'one',text:'Original'});await a.HD_SYNC.start();await tab.HD_SYNC.start();await phone.HD_SYNC.start();
+  await phone.HD_DB.dbPut('notes',{id:'one',text:'From phone'});await phone.HD_SYNC.sync();await a.HD_SYNC.sync();await tab.HD_SYNC.sync();
+  assert.equal((await (await h.request('/api/state')).json()).records['notes/one'].text,'From phone');
 });
 test('an edit during upload survives acknowledgement and syncs next time',async()=>{
   const h=await harness();let a,inject=false;
