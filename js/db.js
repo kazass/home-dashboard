@@ -1,9 +1,9 @@
 const DB_NAME = window.HD_DATABASE_NAME || 'home-dashboard';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const STORES = [
   'events', 'notes', 'shoppingItems', 'homeWork', 'scheduling',
   'maintenanceJobs', 'ideas', 'plants', 'recipes', 'mealPlans', 'photos', 'goals',
-  'completions', 'activities', 'sales',
+  'completions', 'activities', 'sales', 'notifications', 'household',
 ];
 
 function openDB() {
@@ -11,13 +11,27 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const store of STORES) {
+      for (const store of [...STORES, '_sync']) {
         if (!db.objectStoreNames.contains(store)) {
           db.createObjectStore(store, { keyPath: 'id' });
         }
       }
     };
-    req.onsuccess = () => { req.result.onversionchange = () => req.result.close(); resolve(req.result); };
+    req.onsuccess = () => {
+      const db=req.result; db.onversionchange=()=>db.close();
+      const raw=db.transaction.bind(db);db.hdRawTransaction=raw;
+      // Every legacy and new write transaction participates, including actions
+      // that directly update several stores. The marker commits or aborts with it.
+      db.transaction=(names,mode,options)=>{
+        if(mode!=='readwrite')return raw(names,mode,options);
+        const scope=Array.isArray(names)?names:[names];
+        const tx=raw([...new Set([...scope,'_sync'])],mode,options);
+        tx.objectStore('_sync').put({id:'generation',value:crypto.randomUUID()});
+        tx.addEventListener('complete',()=>window.dispatchEvent?.(new Event('hd-data-changed')));
+        return tx;
+      };
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
     req.onblocked = () => reject(new Error("Close other Home Dashboard tabs and reload to finish the update."));
   });
