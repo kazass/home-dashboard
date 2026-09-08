@@ -24,7 +24,7 @@ test('version 2 backup imports into 3.5; version 3 requires the sales store',asy
 test('sales and appearance survive a 3.5 backup round trip',async()=>{
  const c=await app(),sale={id:'book-1',title:'Book',status:'pack',location:'B2',shipBy:'2026-09-10'};
  await c.HD_DB.dbPut('sales',sale);c.localStorage.setItem('hd-settings',JSON.stringify({theme:'cobalt',hubTiles:['sales','kitchen']}));
- const backup=await c.HD_BACKUP.buildBackupData();assert.equal(backup.version,3);
+ const backup=await c.HD_BACKUP.buildBackupData();assert.equal(backup.version,4);
  await c.HD_DB.dbClear('sales');await c.HD_BACKUP.importBackup({text:async()=>JSON.stringify(backup)});
  assert.deepEqual(await c.HD_DB.dbGet('sales','book-1'),sale);
  assert.equal(JSON.parse(c.localStorage.getItem('hd-settings')).hubTiles[0],'sales');

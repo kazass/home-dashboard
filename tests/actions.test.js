@@ -7,7 +7,7 @@ async function app(){
  const c=vm.createContext({indexedDB:new IDBFactory(),structuredClone,crypto,Date,console});c.window=c;
  c.HD_CAL={ymd:d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,parseYMD:s=>new Date(s+'T00:00:00')};
  c.HD_SETTINGS={getAssigneeOptions:()=>['Both','Kasparas','Izolda'],getUserNames:()=>['Kasparas','Izolda']};
- for(const f of ['db','scheduling','points','actions'])vm.runInContext(fs.readFileSync(`js/${f}.js`,'utf8'),c);
+ for(const f of ['db','scheduling','points','action-core','actions'])vm.runInContext(fs.readFileSync(`js/${f}.js`,'utf8'),c);
  await c.HD_DB.dbReady;return c;
 }
 test('concurrent completion credits a task once and Undo restores it',async()=>{

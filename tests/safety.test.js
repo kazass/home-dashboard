@@ -170,7 +170,7 @@ test('empty, truncated, falsy-store and unsupported-version backups never replac
     { version: 2, stores: { notes: [] } },
     { version: 1, stores: { unrelated: [] } },
     ...[null, false, 0, ''].map((value) => ({ version: 1, stores: { notes: value } })),
-    ...[null, false, 0, '', '2', 4].map((version) => ({ version, stores: { notes: [], photos: [] } })),
+    ...[null, false, 0, '', '2', 5].map((version) => ({ version, stores: { notes: [], photos: [] } })),
     { version: 2, stores: { notes: [{ id: 'a', text: 'one' }, { id: 'a', text: 'two' }], photos: [] } },
     { version: 2, stores: { notes: [{ id: 'a', text: 123 }], photos: [] } },
     { version: 2, stores: { notes: [], photos: [{ id: 'p', photoBlob: { __blob: true, dataUrl: 'https://example.com' } }] } },
@@ -255,7 +255,8 @@ test('synchronous restore write failure explicitly aborts the database transacti
   let aborts = 0;
   let clears = 0;
   const tx = {
-    objectStore: () => ({
+    addEventListener: () => {},
+    objectStore: (name) => name === '_sync' ? {put:()=>{}} : ({
       clear: () => { clears++; },
       put: () => { throw new Error('DataCloneError'); },
     }),

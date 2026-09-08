@@ -1,4 +1,4 @@
-const BACKUP_VERSION = 3;
+const BACKUP_VERSION = 4;
 const BACKUP_PREFERENCE_KEYS = ['hd-settings', 'hd-layout'];
 
 function blobToDataURL(blob) {
@@ -59,7 +59,8 @@ function validateBackupData(data) {
     // Version 2 exports every store. A missing store is a truncated backup,
     // not permission to erase that part of the current database.
     const present = Object.hasOwn(data.stores, store);
-    if (version >= 2 && !present && !(version === 2 && store === 'sales')) throw new Error(`Backup store "${store}" is missing.`);
+    const introduced={sales:3,notifications:4,household:4};
+    if (version >= 2 && !present && version >= (introduced[store]||2)) throw new Error(`Backup store "${store}" is missing.`);
     const records = present ? data.stores[store] : [];
     if (!Array.isArray(records)) throw new Error(`Backup store "${store}" is invalid.`);
     const ids = new Set();
@@ -244,12 +245,12 @@ function openBackupModal() {
         <button class="modal-close" id="backup-close-btn" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="text-muted">Everything lives only on this tablet's browser storage. Export a backup file now and then so a tablet reset can't wipe your data. Backups include app data, photos, settings, and dashboard layout.</p>
+        <p class="text-muted">Backups include this device’s current data, photos, settings and layout. Keep an exported copy for recovery, even when shared sync is enabled.</p>
         <button type="button" id="export-backup-btn">Export backup file</button>
         <button type="button" id="export-ics-btn">Export calendar (.ics)</button>
         <p class="text-muted">One-way export of calendar events for importing into Google/Apple/Outlook calendar. Recurring chores/plans aren't included.</p>
         <hr>
-        <p class="text-muted">Importing replaces <strong>all current data</strong> with what's in the file.</p>
+        <p class="text-muted">Importing replaces <strong>all current data</strong> with what's in the file. When sync is enabled, these changes also replace the shared records after syncing.</p>
         <input type="file" id="import-backup-input" accept="application/json">
         <p id="backup-status" class="text-muted"></p>
       </div>

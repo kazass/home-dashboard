@@ -83,6 +83,7 @@ function getSettings() {
 function saveSettings(patch) {
   const merged = { ...getSettings(), ...patch };
   (window.HD_STORAGE || localStorage).setItem(SETTINGS_KEY, JSON.stringify(merged));
+  if(patch.userNames&&window.HD_SYNC)HD_DB.dbGet('household','profile').then(profile=>profile&&HD_DB.dbPut('household',{...profile,userNames:merged.userNames})).catch(error=>window.HD_UI?.toast(error.message));
   return merged;
 }
 

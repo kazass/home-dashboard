@@ -1,4 +1,4 @@
-const CACHE_NAME = 'home-dashboard-v3-redesign-3.5.0';
+const CACHE_NAME = 'home-dashboard-v3-redesign-3.5.1';
 const ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,10 @@ const ASSETS = [
   './fonts/Manrope.woff2',
   './fonts/InstrumentSerif.woff2',
   './js/actions.js',
+  './js/action-core.js',
+  './js/sync.js',
+  './js/sync-merge.js',
+  './js/notifications.js',
   './js/workspace.js',
   './js/today.js',
   './js/app.js',
@@ -67,13 +71,15 @@ self.addEventListener('activate', (event) => {
 // Network-first for same-origin app files, so a new deploy is picked up on next load
 // instead of being stuck behind a stale cache. Falls back to cache when offline.
 self.addEventListener('fetch', (event) => {
+  const path = new URL(event.request.url).pathname;
+  if (path.startsWith('/api/') || path === '/mcp' || path.startsWith('/.well-known/') || path.includes('with-chatgpt') || path === '/callback') return;
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) {
     return;
   }
   event.respondWith(
     fetch(event.request, { cache: 'no-store' })
       .then(async (response) => {
-        if (response.ok) {
+        if (response.ok && !response.redirected && !response.headers.get('cache-control')?.includes('no-store')) {
           const copy = response.clone();
           const cache = await caches.open(CACHE_NAME);
           await cache.put(event.request, copy);
