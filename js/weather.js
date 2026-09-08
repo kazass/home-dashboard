@@ -2,7 +2,7 @@ const LOCATION_CACHE_KEY = 'hd-location-cache';
 
 function getCachedLocation() {
   try {
-    const raw = localStorage.getItem(LOCATION_CACHE_KEY);
+    const raw = (window.HD_STORAGE || localStorage).getItem(LOCATION_CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -10,7 +10,7 @@ function getCachedLocation() {
 }
 
 function setCachedLocation(lat, lon) {
-  localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify({ lat, lon, savedAt: Date.now() }));
+  (window.HD_STORAGE || localStorage).setItem(LOCATION_CACHE_KEY, JSON.stringify({ lat, lon, savedAt: Date.now() }));
 }
 
 function getLocation() {

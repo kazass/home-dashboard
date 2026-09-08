@@ -5,7 +5,7 @@ async function renderShoppingTab(main) {
       <input name="item" placeholder="Item" required>
       <input name="qty" placeholder="Qty (optional)">
       <input name="category" placeholder="Category (optional)">
-      <select name="addedBy">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="addedBy">${HD_SETTINGS.assigneeOptionsHtml()}</select>
       <button type="submit">Add</button>
     </form>
     <div class="shopping-toolbar">

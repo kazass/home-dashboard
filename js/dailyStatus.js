@@ -35,6 +35,8 @@ async function markChoreDone(id) {
   const due = HD_SCHEDULING.choreNextDue(chore);
   const doneAt = new Date();
   doneAt.setHours(0, 0, 0, 0);
+  const doneDate = HD_CAL.ymd(doneAt);
+  if (await HD_POINTS.hasCompletion('chore', chore.id, doneDate)) return;
   const onTime = !chore.lastDoneAt || doneAt <= due;
   const creditedTo = chore.assignedTo;
   chore.currentStreak = onTime ? (chore.currentStreak || 0) + 1 : 1;
@@ -49,7 +51,7 @@ async function markChoreDone(id) {
   await HD_DB.dbPut('scheduling', chore);
   await HD_POINTS.logCompletion({
     itemType: 'chore', itemId: chore.id, person: creditedTo,
-    points: (chore.points || 1) + HD_POINTS.streakBonus(chore.currentStreak),
+    points: (chore.points || 1) + HD_POINTS.streakBonus(chore.currentStreak), date: doneDate,
   });
 }
 

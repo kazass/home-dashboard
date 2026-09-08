@@ -1,4 +1,4 @@
-const APP_VERSION = '2.2.2';
+const APP_VERSION = '3.5.0';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,33 @@ const APP_VERSION = '2.2.2';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {version:'3.5.0',date:'2026-09-08',notes:[
+    'New Home Hub with a live clock, next event, six household areas and an optional display mode.',
+    'A weekly planner combines events, recurring plans, due tasks and dinners, with ingredient review before adding shopping items.',
+    'Manual sales and parcel tracking includes shelf location, dispatch deadline and editable status.',
+    'Five colour themes, light/dark/system modes, clean sans-serif typography and large touch controls.',
+    'Existing household records are preserved; older backups are supported and new backups include sales.',
+  ]},
+  {
+    version: '3.0.0-preview', date: '2026-09-07', notes: [
+      'Added a Today workspace, seven-day strip, household filters and five labelled navigation destinations.',
+      'Added configurable widgets with Daily, Week planner and Focus layouts, saved separately for narrow and wide screens.',
+      'Added quick add, task postponing, reassignment and transactional completion with Undo.',
+      'Added light, dark and system colour modes and larger text, independently of dashboard layout.',
+      'Kept the original dashboard data separate; import a backup to copy it into this preview.',
+    ],
+  },
+  {
+    version: '2.3.1',
+    date: '2026-08-27',
+    notes: [
+      'Made backup restore validated and transactional so a bad file cannot leave the dashboard half-erased; backups now include settings and layout.',
+      'Fixed duplicate points from completing, undoing, and recompleting the same task, and blocked duplicate same-day chore credit.',
+      'Fixed monthly schedules on the 29th–31st skipping into the following month.',
+      'Hardened user names and pasted links before rendering them.',
+      'Fixed photo-preview memory accumulating during long tablet sessions and requested persistent browser storage.',
+    ],
+  },
   {
     version: '2.2.2',
     date: '2026-08-24',

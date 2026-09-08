@@ -1,8 +1,22 @@
-const CACHE_NAME = 'home-dashboard-v26';
+const CACHE_NAME = 'home-dashboard-v3-redesign-3.5.0';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
+  './css/redesign.css',
+  './css/hub.css',
+  './fonts/Inter.woff2',
+  './js/hub.js',
+  './js/week.js',
+  './js/sales.js',
+  './js/themes.js',
+  './js/runtime.js',
+  './js/ui-icons.js',
+  './fonts/Manrope.woff2',
+  './fonts/InstrumentSerif.woff2',
+  './js/actions.js',
+  './js/workspace.js',
+  './js/today.js',
   './js/app.js',
   './js/db.js',
   './js/weather.js',
@@ -45,7 +59,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('home-dashboard-v3-redesign-') && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -58,9 +72,12 @@ self.addEventListener('fetch', (event) => {
   }
   event.respondWith(
     fetch(event.request, { cache: 'no-store' })
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+      .then(async (response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, copy);
+        }
         return response;
       })
       .catch(() => caches.match(event.request))

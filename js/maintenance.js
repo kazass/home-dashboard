@@ -16,7 +16,7 @@ async function renderMaintenanceContent(main) {
         <option value="months">Months</option>
       </select>
       <input type="number" name="points" min="0" value="1" style="width:60px" placeholder="Pts">
-      <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}">${a}</option>`).join('')}</select>
+      <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml()}</select>
       <label class="settings-checkbox"><input type="checkbox" name="rotate"> Rotate between users each time</label>
       <textarea name="notes" placeholder="Notes (optional)"></textarea>
       <button type="submit">Add chore</button>
@@ -49,7 +49,7 @@ async function renderMaintenanceContent(main) {
           </select>
         </div>
         <input type="number" name="points" min="0" value="${c.points || 1}" style="width:60px" placeholder="Pts">
-        <select name="assignedTo">${HD_SETTINGS.getAssigneeOptions().map((a) => `<option value="${a}" ${a === c.assignedTo ? 'selected' : ''}>${a}</option>`).join('')}</select>
+        <select name="assignedTo">${HD_SETTINGS.assigneeOptionsHtml(c.assignedTo)}</select>
         <label class="settings-checkbox"><input type="checkbox" name="rotate" ${c.rotate ? 'checked' : ''}> Rotate between users each time</label>
         <textarea name="notes" placeholder="Notes (optional)">${HD_CAL.escapeHtml(c.notes || '')}</textarea>
         <div class="modal-form-actions">
@@ -97,6 +97,11 @@ async function renderMaintenanceContent(main) {
         const due = HD_SCHEDULING.choreNextDue(chore);
         const doneAt = new Date();
         doneAt.setHours(0, 0, 0, 0);
+        const doneDate = HD_CAL.ymd(doneAt);
+        if (window.HD_POINTS && await HD_POINTS.hasCompletion('chore', chore.id, doneDate)) {
+          btn.disabled = false;
+          return;
+        }
         const onTime = !chore.lastDoneAt || doneAt <= due;
         const creditedTo = chore.assignedTo;
         chore.currentStreak = onTime ? (chore.currentStreak || 0) + 1 : 1;
@@ -111,7 +116,7 @@ async function renderMaintenanceContent(main) {
         if (window.HD_POINTS) {
           await HD_POINTS.logCompletion({
             itemType: 'chore', itemId: chore.id, person: creditedTo,
-            points: (chore.points || 1) + HD_POINTS.streakBonus(chore.currentStreak),
+            points: (chore.points || 1) + HD_POINTS.streakBonus(chore.currentStreak), date: doneDate,
           });
         }
         refresh();

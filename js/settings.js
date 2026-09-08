@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'hd-settings';
 const DEFAULT_SETTINGS = {
-  idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '',
-  personColors: { Kasparas: '#4f7fc7', Izolda: '#c74f8f' },
+  idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'cobalt', mode: 'dark', accentColor: null, spotifyUrl: '',
+  personColors: { Kasparas: '#84a6ed', Izolda: '#e4a9c4' },
   userNames: ['Kasparas', 'Izolda'],
   dailyStatusEnabled: true,
   hiddenCards: [],
@@ -57,9 +57,23 @@ const THEMES = {
   },
 };
 
+const POLISHED_PALETTES = {
+  forest: {bg:'#f4f6f3',text:'#152f26',muted:'#616e66',accent:'#1b4437',border:'#dfe6df',soft:'#eaf0dc',warm:'#faf4e4',hero:'#193c32'},
+  ocean: {bg:'#f0f5f7',text:'#183341',muted:'#546c78',accent:'#205c74',border:'#dbe6ec',soft:'#e3eff0',warm:'#eef2e8',hero:'#204352'},
+  sunset: {bg:'#faf3ef',text:'#3c2a23',muted:'#7a655a',accent:'#9a4a30',border:'#ecddd4',soft:'#f2e5d2',warm:'#fff2de',hero:'#653d2c'},
+  lavender: {bg:'#f5f2f8',text:'#352b43',muted:'#74667f',accent:'#665081',border:'#e5deed',soft:'#eee8f3',warm:'#f4edee',hero:'#463452'},
+  slate: {bg:'#f1f3f5',text:'#263541',muted:'#63717b',accent:'#3d5668',border:'#dee4e8',soft:'#e4eaec',warm:'#eef0ed',hero:'#253c4b'},
+};
+for(const [id,p] of Object.entries(POLISHED_PALETTES)){
+  Object.assign(THEMES[id].light,{'--bg':p.bg,'--text':p.text,'--text-muted':p.muted,'--accent':p.accent,'--border':p.border,'--today-bg':p.soft,'--surface-soft':p.soft,'--surface-warm':p.warm,'--hero-bg':p.hero,'--hero-text':'#f4f8ef'});
+  Object.assign(THEMES[id].dark,{'--surface-soft':'color-mix(in srgb, var(--surface) 80%, var(--accent) 20%)','--surface-warm':'color-mix(in srgb, var(--surface) 88%, #b19461 12%)','--hero-bg':p.hero,'--hero-text':'#f4f8ef'});
+  THEMES[id].swatch=p.accent;
+}
+Object.assign(THEMES.forest.dark,{'--bg':'#101c18','--surface':'#192a23','--text':'#e9f0e6','--text-muted':'#a9bbb0','--accent':'#c3d7a3','--accent-text':'#18332a','--border':'#2c4337','--today-bg':'#283d30'});
+
 function getSettings() {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = (window.HD_STORAGE || localStorage).getItem(SETTINGS_KEY);
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -68,7 +82,7 @@ function getSettings() {
 
 function saveSettings(patch) {
   const merged = { ...getSettings(), ...patch };
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+  (window.HD_STORAGE || localStorage).setItem(SETTINGS_KEY, JSON.stringify(merged));
   return merged;
 }
 
@@ -81,16 +95,37 @@ function getShowCompletedOnCalendar() {
 }
 
 function getPersonColor(name) {
-  return getSettings().personColors[name] || null;
+  const color = getSettings().personColors[name];
+  return typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
 }
 
 function getUserNames() {
   const names = getSettings().userNames;
-  return Array.isArray(names) && names.length ? names : Object.keys(DEFAULT_SETTINGS.personColors);
+  const validNames = Array.isArray(names)
+    ? names.filter((name) => typeof name === 'string' && name.trim() && name.length <= 60)
+    : [];
+  return validNames.length ? validNames : Object.keys(DEFAULT_SETTINGS.personColors);
 }
 
 function getAssigneeOptions() {
   return ['Both', ...getUserNames()];
+}
+
+function assigneeOptionsHtml(selected) {
+  return getAssigneeOptions().map((name) => {
+    const safe = HD_CAL.escapeHtml(name);
+    return `<option value="${safe}" ${name === selected ? 'selected' : ''}>${safe}</option>`;
+  }).join('');
+}
+
+function safeExternalUrl(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function getDailyStatusEnabled() {
@@ -115,9 +150,9 @@ function setCardHidden(cardId, hidden) {
 // relabel it.
 async function renameUser(oldName, newName) {
   const trimmed = newName.trim();
-  if (!trimmed || trimmed === oldName) return false;
+  if (!trimmed || trimmed.length > 60 || trimmed === oldName || trimmed.toLowerCase() === 'both') return false;
   const names = getUserNames();
-  if (names.includes(trimmed)) return false;
+  if (names.some((name) => name.toLowerCase() === trimmed.toLowerCase())) return false;
   const updatedNames = names.map((n) => (n === oldName ? trimmed : n));
   const personColors = { ...getSettings().personColors };
   personColors[trimmed] = personColors[oldName];
@@ -156,10 +191,9 @@ async function migratePersonNameInStores(oldName, newName) {
 // Shared badge renderer so "assigned to" shows as a colored chip for
 // Kasparas/Izolda everywhere in the app, instead of plain text.
 function personBadgeHtml(name) {
-  const label = name || 'Both';
-  const color = getPersonColor(label);
-  if (!color) return `<span class="badge">${label}</span>`;
-  return `<span class="badge person-badge" style="background:${color}26;color:${color};border:1px solid ${color}66">${label}</span>`;
+  const label=name||'Both',color=getPersonColor(label),safeLabel=HD_CAL.escapeHtml(label);
+  if(!color)return `<span class="badge">${safeLabel}</span>`;
+  return `<span class="badge person-badge"><span aria-hidden="true" class="v3-avatar" style="--person-color:${color}">${HD_CAL.escapeHtml(label.slice(0,1))}</span>${safeLabel}</span>`;
 }
 
 // Converts a normal open.spotify.com link (playlist/album/track/artist/show/
@@ -176,8 +210,11 @@ function spotifyEmbedUrl(rawUrl) {
 // override on top of it (accent picker wins over the theme's own accent).
 function applyAppearance() {
   const settings = getSettings();
-  const theme = THEMES[settings.theme] || THEMES.forest;
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = THEMES[settings.theme] || THEMES.cobalt || THEMES.forest;
+  const isDark = settings.mode === 'dark' || (settings.mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.mode = isDark ? 'dark' : 'light';
+  document.documentElement.dataset.theme = settings.theme;
+  document.documentElement.dataset.textSize = settings.textSize || 'standard';
   const vars = isDark ? theme.dark : theme.light;
   const root = document.documentElement.style;
   for (const [key, value] of Object.entries(vars)) root.setProperty(key, value);
@@ -195,11 +232,24 @@ if (window.matchMedia) {
 
 function openSettingsModal() {
   let overlay = document.getElementById('settings-modal-overlay');
-  if (overlay) overlay.remove();
+  if (overlay) {
+    if (overlay.cleanupPhotoUrls) overlay.cleanupPhotoUrls();
+    overlay.remove();
+  }
   overlay = document.createElement('div');
   overlay.id = 'settings-modal-overlay';
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
+  let photoUrls = [];
+  function cleanupPhotoUrls() {
+    photoUrls.forEach((url) => URL.revokeObjectURL(url));
+    photoUrls = [];
+  }
+  function closeSettings() {
+    cleanupPhotoUrls();
+    overlay.remove();
+  }
+  overlay.cleanupPhotoUrls = cleanupPhotoUrls;
 
   const current = getIdleTimeoutMinutes();
   const { theme: currentTheme, accentColor: currentAccent, spotifyUrl: currentSpotify } = getSettings();
@@ -269,7 +319,7 @@ function openSettingsModal() {
           <div class="person-color-row">
             ${getUserNames().map((name) => `
               <label class="person-color-item">
-                <input type="color" data-person-color="${name}" value="${getPersonColor(name)}">
+                <input type="color" data-person-color="${HD_CAL.escapeHtml(name)}" value="${getPersonColor(name) || '#777777'}">
                 <input type="text" class="user-name-input" data-user-name="${HD_CAL.escapeHtml(name)}" value="${HD_CAL.escapeHtml(name)}">
               </label>`).join('')}
           </div>
@@ -288,8 +338,8 @@ function openSettingsModal() {
       </div>
     </div>`;
 
-  overlay.querySelector('#settings-close-btn').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#settings-close-btn').addEventListener('click', closeSettings);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSettings(); });
   overlay.querySelector('#idle-timeout-select').addEventListener('change', (e) => {
     saveSettings({ idleTimeoutMinutes: Number(e.target.value) });
   });
@@ -349,7 +399,7 @@ function openSettingsModal() {
   });
   overlay.querySelector('#reset-layout-btn').addEventListener('click', () => {
     if (window.HD_LAYOUT) HD_LAYOUT.resetLayout();
-    overlay.remove();
+    closeSettings();
     location.reload();
   });
   overlay.querySelector('#spotify-url-input').addEventListener('change', (e) => {
@@ -366,12 +416,17 @@ function openSettingsModal() {
     const photos = await HD_DB.dbGetAll('photos');
     const thumbsEl = overlay.querySelector('#photo-thumbs');
     if (!thumbsEl) return;
+    cleanupPhotoUrls();
     thumbsEl.innerHTML = photos.length
-      ? photos.map((p) => `
+      ? photos.map((p) => {
+        const url = URL.createObjectURL(p.photoBlob);
+        photoUrls.push(url);
+        return `
         <div class="photo-thumb" data-id="${p.id}">
-          <img src="${URL.createObjectURL(p.photoBlob)}" alt="">
+          <img src="${url}" alt="">
           <button type="button" data-delete-photo="${p.id}" aria-label="Delete">&times;</button>
-        </div>`).join('')
+        </div>`;
+      }).join('')
       : '<p class="text-muted">No photos yet — add some for the screensaver to cycle through.</p>';
     thumbsEl.querySelectorAll('[data-delete-photo]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -391,13 +446,18 @@ function openSettingsModal() {
     refreshPhotoThumbs();
   });
 
+  if(window.HD_UI){
+    overlay.querySelector('.modal-header h3').textContent='Household & display';
+    for(const selector of ['.theme-swatches','.accent-swatches','#reset-layout-btn','.card-visibility-row','#daily-status-checkbox'])overlay.querySelector(selector)?.closest('.settings-field')?.remove();
+    overlay.querySelector('#spotify-url-status').textContent='Your playlist appears in the Music widget.';
+  }
   refreshPhotoThumbs();
 }
 
 window.HD_SETTINGS = {
   getSettings, saveSettings, getIdleTimeoutMinutes, getShowCompletedOnCalendar,
   getPersonColor, personBadgeHtml, applyAppearance, openSettingsModal,
-  spotifyEmbedUrl, THEMES, ACCENT_PRESETS,
-  getUserNames, getAssigneeOptions, getDailyStatusEnabled, renameUser,
+  spotifyEmbedUrl, safeExternalUrl, THEMES, ACCENT_PRESETS,
+  getUserNames, getAssigneeOptions, assigneeOptionsHtml, getDailyStatusEnabled, renameUser,
   getHiddenCards, setCardHidden,
 };
