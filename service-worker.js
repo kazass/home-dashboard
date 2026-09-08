@@ -1,9 +1,15 @@
-const CACHE_NAME = 'home-dashboard-v3-redesign-2';
+const CACHE_NAME = 'home-dashboard-v3-redesign-3.5.0';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
   './css/redesign.css',
+  './css/hub.css',
+  './fonts/Inter.woff2',
+  './js/hub.js',
+  './js/week.js',
+  './js/sales.js',
+  './js/themes.js',
   './js/runtime.js',
   './js/ui-icons.js',
   './fonts/Manrope.woff2',

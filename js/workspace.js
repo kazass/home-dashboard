@@ -1,11 +1,15 @@
 /* A single registry drives navigation and the configurable widget catalogue. */
 (() => {
   const features = [
-    {id:'dashboard', title:'Today', description:'Your day, at a glance', primary:true},
-    {id:'calendar', title:'Calendar', description:'Events, holidays and plans', primary:true},
+    {id:'dashboard', title:'Home', description:'Your day, at a glance', primary:true},
+    {id:'week', title:'Week', description:'Events, chores and meals together', primary:true},
+    {id:'calendar', title:'Calendar', description:'The full month and your events'},
     {id:'tasks', title:'Tasks', description:'To-dos and recurring chores', primary:true},
     {id:'kitchen', title:'Kitchen', description:'Shopping, recipes and meals', primary:true},
     {id:'more', title:'More', description:'Everything for your home', primary:true},
+    {id:'sales', title:'Sales & parcels', description:'Track items, shelf locations and shipping'},
+    {id:'trips', title:'Trips & plans', description:'Upcoming trips and time away'},
+    {id:'today', title:'Today', description:'Your detailed daily view and widgets'},
     {id:'garden', title:'Garden', description:'Plants, watering and care'},
     {id:'notes', title:'Notes', description:'Things to remember'},
     {id:'ideas', title:'Ideas', description:'A little inspiration for later'},

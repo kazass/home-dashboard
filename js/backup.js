@@ -1,4 +1,4 @@
-const BACKUP_VERSION = 2;
+const BACKUP_VERSION = 3;
 const BACKUP_PREFERENCE_KEYS = ['hd-settings', 'hd-layout'];
 
 function blobToDataURL(blob) {
@@ -59,7 +59,7 @@ function validateBackupData(data) {
     // Version 2 exports every store. A missing store is a truncated backup,
     // not permission to erase that part of the current database.
     const present = Object.hasOwn(data.stores, store);
-    if (version >= 2 && !present) throw new Error(`Backup store "${store}" is missing.`);
+    if (version >= 2 && !present && !(version === 2 && store === 'sales')) throw new Error(`Backup store "${store}" is missing.`);
     const records = present ? data.stores[store] : [];
     if (!Array.isArray(records)) throw new Error(`Backup store "${store}" is invalid.`);
     const ids = new Set();
@@ -91,7 +91,7 @@ function validateBackupData(data) {
 
 function validatePreparedRecords(recordsByStore) {
   const requiredStrings = {
-    events: ['title', 'date'], notes: ['text'], shoppingItems: ['item'],
+    sales: ['title', 'status'], events: ['title', 'date'], notes: ['text'], shoppingItems: ['item'],
     homeWork: ['title'], scheduling: ['title'], ideas: ['title'], plants: ['name'],
     recipes: ['title'], mealPlans: ['date', 'recipeId'], goals: ['title'],
     completions: ['itemType', 'itemId', 'person'], activities: ['name'],
@@ -104,6 +104,11 @@ function validatePreparedRecords(recordsByStore) {
         }
       }
     }
+  }
+
+  for (const record of recordsByStore.sales || []) {
+    if (!['listed','pack','ready','sent','complete'].includes(record.status)) throw new Error('Backup contains an invalid sale status.');
+    if (record.shipBy && (typeof record.shipBy !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.shipBy) || HD_CAL.ymd(HD_CAL.parseYMD(record.shipBy)) !== record.shipBy)) throw new Error('Backup contains an invalid dispatch date.');
   }
 
   for (const record of recordsByStore.photos || []) {

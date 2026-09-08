@@ -164,5 +164,5 @@
       el.querySelector('button').onclick=()=>renderWeatherWidget(el);
     }
   }
-  window.HD_TODAY={render,renderWidget,records,chosenDate,agendaItemsOnDate,agendaForWeek};
+  window.HD_TODAY={render,renderWidget,records,chosenDate,agendaItemsOnDate,agendaForWeek,row,attachRows};
 })();

@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'hd-settings';
 const DEFAULT_SETTINGS = {
-  idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'forest', accentColor: null, spotifyUrl: '',
-  personColors: { Kasparas: '#6c8952', Izolda: '#b29654' },
+  idleTimeoutMinutes: 3, showCompletedOnCalendar: false, theme: 'cobalt', mode: 'dark', accentColor: null, spotifyUrl: '',
+  personColors: { Kasparas: '#84a6ed', Izolda: '#e4a9c4' },
   userNames: ['Kasparas', 'Izolda'],
   dailyStatusEnabled: true,
   hiddenCards: [],
@@ -210,9 +210,10 @@ function spotifyEmbedUrl(rawUrl) {
 // override on top of it (accent picker wins over the theme's own accent).
 function applyAppearance() {
   const settings = getSettings();
-  const theme = THEMES[settings.theme] || THEMES.forest;
+  const theme = THEMES[settings.theme] || THEMES.cobalt || THEMES.forest;
   const isDark = settings.mode === 'dark' || (settings.mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.mode = isDark ? 'dark' : 'light';
+  document.documentElement.dataset.theme = settings.theme;
   document.documentElement.dataset.textSize = settings.textSize || 'standard';
   const vars = isDark ? theme.dark : theme.light;
   const root = document.documentElement.style;

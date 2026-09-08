@@ -1,18 +1,6 @@
 async function collectSearchIndex() {
-  const index = [];
-
-  (await HD_DB.dbGetAll('notes')).forEach((n) => index.push({ tab: 'notes', label: 'Notes', text: n.text }));
-  (await HD_DB.dbGetAll('shoppingItems')).forEach((i) => index.push({ tab: 'shopping', label: 'Shopping', text: i.item }));
-  (await HD_DB.dbGetAll('homeWork')).forEach((t) => index.push({ tab: 'tasks', label: 'Tasks · To-do', text: t.title }));
-  (await HD_DB.dbGetAll('scheduling')).forEach((s) => index.push({
-    tab: 'tasks', label: s.category === 'chore' ? 'Tasks · Chores' : 'Tasks · Plans', text: s.title,
-  }));
-  (await HD_DB.dbGetAll('ideas')).forEach((i) => index.push({ tab: 'ideas', label: 'Ideas', text: i.title }));
-  (await HD_DB.dbGetAll('plants')).forEach((p) => index.push({ tab: 'garden', label: 'Garden', text: p.name }));
-  (await HD_DB.dbGetAll('recipes')).forEach((r) => index.push({ tab: 'recipes', label: 'Recipes', text: r.title }));
-  (await HD_DB.dbGetAll('events')).forEach((e) => index.push({ tab: 'dashboard', label: 'Calendar', text: e.title }));
-
-  return index;
+  const definitions=[['notes','notes','Notes',r=>r.text],['shoppingItems','shopping','Shopping',r=>r.item],['homeWork','tasks','Tasks',r=>r.title],['scheduling','tasks','Tasks & plans',r=>r.title],['ideas','ideas','Ideas',r=>r.title],['plants','garden','Garden',r=>r.name],['recipes','recipes','Recipes',r=>r.title],['events','calendar','Calendar',r=>r.title],['sales','sales/all','Sales & parcels',r=>[r.title,r.location].filter(Boolean).join(' · ')]];
+  return (await Promise.all(definitions.map(async([store,tab,label,toText])=>(await HD_DB.dbGetAll(store)).map(record=>({tab,label,text:toText(record)}))))).flat();
 }
 
 function openSearchModal() {
@@ -41,13 +29,17 @@ function openSearchModal() {
   const input = overlay.querySelector('#search-input');
   const resultsEl = overlay.querySelector('#search-results');
 
+  let searchSequence=0;
   input.addEventListener('input', async () => {
+    const current=++searchSequence;
     const q = input.value.trim().toLowerCase();
     if (q.length < 2) {
       resultsEl.innerHTML = '<p class="text-muted">Type at least 2 characters.</p>';
       return;
     }
-    const index = await collectSearchIndex();
+    let index;
+    try { index = await collectSearchIndex(); } catch { resultsEl.textContent="Search is unavailable. Please try again."; return; }
+    if(current!==searchSequence||!overlay.isConnected)return;
     const matches = index.filter((item) => item.text && item.text.toLowerCase().includes(q));
     resultsEl.innerHTML = matches.length
       ? `<ul class="mini-list">${matches.map((m) => `<li><a href="#${m.tab}" class="mini-link" data-result>${HD_CAL.escapeHtml(m.text)} <span class="badge">${m.label}</span></a></li>`).join('')}</ul>`

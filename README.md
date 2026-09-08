@@ -1,101 +1,37 @@
-# Home Dashboard v3 preview
+# Home Dashboard 3.5
 
-This branch preserves the existing dashboard while adding a tablet-friendly Today workspace. The original `main` branch and its GitHub Pages deployment are unchanged.
+A tablet-first, offline-capable home hub for Kasparas and Izolda.
 
-## Visual direction
+- **Home:** live clock, next event, and configurable Kitchen, Garden, Housework, Trips, Sales, and Notes tiles.
+- **Week:** events, next-due chores, plant care and dinners; review recipe ingredients before adding groceries.
+- **Sales & parcels:** manual listings, shelf locations, send-by dates and status tracking.
+- **Appearance:** Ink, Cobalt, Cherry, Volt and Copper; light/dark/system modes and large text.
+- **Display mode:** a large clock with the next event; return using Back to home or Escape.
 
-An editorial Today view pairs Instrument Serif headings with Manrope controls, a deep agenda panel, quieter task rows and compact dinner/garden cards. All fonts and icons are local and work offline. Five semantic palettes keep layout and interaction consistent. See [DESIGN.md](DESIGN.md) for component rules and the feature roadmap.
+All existing tasks, recipes, garden records, calendar, shopping, notes, ideas, statistics, activities, goals, music and backup features remain available. The earlier detailed Today screen is linked from Home.
 
-## What is included
+## Data and upgrades
 
-- Today priorities, a seven-day strip and Everyone/person filters.
-- Today / Calendar / Tasks / Kitchen / More navigation. Existing garden, notes, ideas, recipes, meals, goals, activities, statistics, music, decision helper and release notes remain available.
-- Quick add for tasks, chores, events, shopping and notes.
-- Transactional completion, postponing and reassignment, with Undo. Completion records and task changes commit together.
-- Eleven optional widgets; reorder, hide and choose sizes through Edit layout. Daily, Week planner and Focus presets. Narrow and wide screens keep separate layouts.
-- Five themes, light/dark/system mode and standard/large text. Appearance does not change layout.
-- Accessible dialog labels, keyboard focus management and Escape dismissal.
+v3.5 keeps v3 household records in the same browser database. The original v2 dashboard uses a separate database and is unchanged. To bring records from the original app or another device, export a JSON backup there, then use **Settings → Backup & restore** here. Import replaces this version’s records after validation. Backups include sales, photos, themes and layout. Backups from versions 1 and 2 remain supported.
 
-## Bring over household data
+Data belongs to the browser and site where it was entered. Export regularly; shared phone/tablet sync is not connected. The local time zone of your device controls the clock and calendar dates. Vinted notification forwarding and ChatGPT actions are future integrations; sales tracking works manually.
 
-The preview starts empty. Export a JSON backup from the original dashboard, then use More → Settings → Backup & restore here. Import creates a separate copy in this browser; it does not sync subsequent changes.
+## Install
 
-The preview uses IndexedDB `home-dashboard-v3` and `hd-v3-*` preferences. The original uses `home-dashboard` and `hd-*`. Keep backups for each version. Browser storage is device-local: phone/tablet sync and assistant actions are not connected.
+Open the dashboard in Chrome on Android, then choose **Add to Home screen / Install app**. First load requires a connection; saved household features work offline after caching. Spotify and live weather require a connection.
 
-## Develop and verify
+## Develop
 
-Run `npm ci`, then `npm run dev`. The production app remains plain HTML/CSS/JavaScript with no frontend runtime dependencies. Vite is only a development server. `npm run build` copies public assets to `dist` for the separate private preview.
-
-Run `npm test` for the safety and action regression suite; `npm run check` validates JavaScript syntax. The action tests use fake-indexeddb to verify concurrent completion, Undo and rotating-chore credit.
-
-## Next features
-
-1. Improve meal ingredient preview/merging and full shopping mode.
-2. Add backup reminders and clearer update status.
-3. Add authenticated shared storage with conflict handling and explicit data migration.
-4. Connect ChatGPT actions to that shared action service.
-5. Pilot Vinted email notifications after confirming account notification coverage.
-
-ChatGPT, Vinted and shared sync are plans, not working connections. Some secondary feature editors retain their original forms, restyled within the new shell. Android keyboard, PWA installation and long-running offline sessions still need device testing.
-
----
-
-## Original dashboard
-
-Offline-first household dashboard for a dedicated tablet. The app is hosted as
-a static PWA on GitHub Pages; household records and uploaded photos stay in the
-browser's IndexedDB and are not uploaded to GitHub.
-
-Live app: https://kazass.github.io/home-dashboard/
-
-## Local development
-
-Serve the repository over HTTP so IndexedDB, geolocation, and the service
-worker behave like they do in production. On Windows PowerShell:
-
-```powershell
-./tools/serve.ps1
+```sh
+npm ci
+npm run dev
+npm test
+npm run check
+npm run build
 ```
 
-Then open `http://localhost:8080/`.
+This is a vanilla JavaScript PWA. Feature modules share IndexedDB records and transactional household actions; appearance and hub-area registries remain independent. See V3.5.md for design and compatibility decisions.
 
-## Verification
+## Previous versions
 
-The project uses Node's built-in test runner and has no package dependencies:
-
-```bash
-node --test tests/*.test.js
-```
-
-Before releasing, also syntax-check every script and test backup export/import,
-offline reload, task completion/undo, recurring dates, and photo views on the
-target tablet.
-
-## Data recovery
-
-Use **Backup → Export backup file** regularly. Version 2 backups contain all
-IndexedDB records and photos plus application settings and dashboard layout.
-Restore validates and decodes the entire file before replacing the current
-database, and the database replacement is transactional.
-
-Version 2 restores require all application stores; incomplete files, invalid
-store values and unsupported version values are rejected before any writes.
-Version 1 backups remain supported and leave existing preferences unchanged.
-Synchronous write failures explicitly abort the restore transaction.
-
-## Redesign progress
-
-Work continues on `codex/scalable-dashboard-v3`; `main` remains the existing
-live dashboard. The original safety patch is preserved at `7772f28` on
-`codex/stage1-safety-fixes`.
-
-- Data protection: ten Node regression tests pass, including backup round-trip
-  with photo bytes and preferences, malformed import rejection, scoring undo,
-  month-end recurrence and explicit transaction abort on a synchronous error.
-  These use in-memory storage/transaction doubles, not a browser IndexedDB engine.
-- Still required before release: real-browser restore/rollback, completion/undo,
-  offline reload and Samsung tablet checks. The cloud preview browser blocked
-  the local test address in this work session; no rendered QA pass is claimed.
-- Next implementation: Today-first responsive shell, modular widgets and
-  independent themes, retaining existing records and features. The visual
-  redesign is not implemented yet.
+The original app remains on main. The v3.0 preview remains on codex/scalable-dashboard-v3. Version 3.5 is developed on codex/home-hub-v3.5.

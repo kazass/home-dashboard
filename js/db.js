@@ -1,9 +1,9 @@
 const DB_NAME = window.HD_DATABASE_NAME || 'home-dashboard';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORES = [
   'events', 'notes', 'shoppingItems', 'homeWork', 'scheduling',
   'maintenanceJobs', 'ideas', 'plants', 'recipes', 'mealPlans', 'photos', 'goals',
-  'completions', 'activities',
+  'completions', 'activities', 'sales',
 ];
 
 function openDB() {
@@ -17,8 +17,9 @@ function openDB() {
         }
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => { req.result.onversionchange = () => req.result.close(); resolve(req.result); };
     req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error("Close other Home Dashboard tabs and reload to finish the update."));
   });
 }
 

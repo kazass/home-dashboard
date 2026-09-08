@@ -1,6 +1,8 @@
 /* Shared outline icon vocabulary. Labels remain in real HTML. */
 (() => {
  const paths={
+ sales:'<path d="m3 7 9-5 9 5v11l-9 5-9-5V7Zm0 0 9 5 9-5M12 12v11M7 5l10 5v5"/>',
+ display:'<rect x="2" y="3" width="20" height="15" rx="2"/><path d="M8 22h8m-4-4v4"/>',
  home:'<path d="m3 10 9-8 9 8v11H3V10Z"/><path d="m9 10 5 4v7"/>',
  calendar:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 2v6m10-6v6M3 11h18"/>',
  tasks:'<rect x="5" y="3" width="14" height="18" rx="3"/><path d="m9 10 2 2 4-5m-6 10h6"/>',

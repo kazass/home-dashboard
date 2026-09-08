@@ -1,4 +1,4 @@
-const APP_VERSION = '3.0.0-preview';
+const APP_VERSION = '3.5.0';
 
 // Newest first. Add one entry here each time a real update ships.
 // Versioning: major.minor.patch, but minor/patch aren't semantic — they're a
@@ -6,6 +6,13 @@ const APP_VERSION = '3.0.0-preview';
 // Hour changes -> bump minor and reset patch to 1 (2.1.3 -> 2.2.1). Major
 // only moves for genuinely big batches, at your judgment.
 const CHANGELOG = [
+  {version:'3.5.0',date:'2026-09-08',notes:[
+    'New Home Hub with a live clock, next event, six household areas and an optional display mode.',
+    'A weekly planner combines events, recurring plans, due tasks and dinners, with ingredient review before adding shopping items.',
+    'Manual sales and parcel tracking includes shelf location, dispatch deadline and editable status.',
+    'Five colour themes, light/dark/system modes, clean sans-serif typography and large touch controls.',
+    'Existing household records are preserved; older backups are supported and new backups include sales.',
+  ]},
   {
     version: '3.0.0-preview', date: '2026-09-07', notes: [
       'Added a Today workspace, seven-day strip, household filters and five labelled navigation destinations.',

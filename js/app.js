@@ -47,7 +47,7 @@
     }));
   }
   function addMenu(){
-    const el=dialog('A little something to add',`<div class="v3-add-menu">${[['task','Task','One thing to take care of'],['chore','Chore','Something that repeats'],['shopping','Shopping item','Keep it on the list'],['event','Event','Make a little time'],['note','Note','Remember it for later']].map(([id,title,sub])=>`<button data-add-type="${id}"><strong>${title}</strong><span>${sub}</span><b aria-hidden="true">+</b></button>`).join('')}</div>`);
+    const el=dialog('Quick add',`<div class="v3-add-menu">${[['task','Task','One thing to take care of'],['chore','Chore','Something that repeats'],['shopping','Shopping item','Keep it on the list'],['event','Event','Make a little time'],['note','Note','Remember it for later']].map(([id,title,sub])=>`<button data-add-type="${id}"><strong>${title}</strong><span>${sub}</span><b aria-hidden="true">+</b></button>`).join('')}</div>`);
     el.querySelectorAll('[data-add-type]').forEach(btn=>btn.onclick=()=>{const t=btn.dataset.addType;if(t==='event'){closeDialog();HD_DASHBOARD.openEventModal(HD_TODAY.chosenDate(),refresh);}else quickAdd(t);});
   }
   function editLayout(){
@@ -67,23 +67,23 @@
     };draw();
   }
   async function renderSettings(host){
-    host.innerHTML='<div class="v3-page-heading"><div><h1>Settings</h1><p>A home dashboard that feels like yours.</p></div></div><div class="v3-settings-grid"><section class="v3-surface" id="appearance"></section><section class="v3-surface"><h2>Layout</h2><p class="text-muted">Choose your widgets and their order. Portrait and landscape layouts are saved separately.</p><button id="settings-layout">Edit layout</button></section><section class="v3-surface"><h2>Your data</h2><p class="text-muted">This version keeps a separate copy of your household data. Import a backup from your original dashboard to bring it here.</p><button id="backup-settings">Backup &amp; restore</button><p class="v3-small">Your data stays in this browser until you export it.</p></section><section class="v3-surface"><h2>People &amp; display</h2><p class="text-muted">Household names, person colours, screensaver photos and Spotify.</p><button id="advanced-settings">Open household settings</button></section><section class="v3-surface"><h2>Connections</h2><p class="text-muted">ChatGPT actions, Vinted notifications and shared sync are planned. No accounts are connected.</p></section></div>';
+    host.innerHTML='<div class="v3-page-heading"><div><h1>Settings</h1><p>A home dashboard that feels like yours.</p></div></div><div class="v3-settings-grid"><section class="v3-surface" id="appearance"></section><section class="v3-surface"><h2>Layout</h2><p class="text-muted">Choose the home areas you use and arrange their order.</p><button id="settings-layout">Edit layout</button></section><section class="v3-surface"><h2>Your data</h2><p class="text-muted">This version keeps a separate copy of your household data. Import a backup from your original dashboard to bring it here.</p><button id="backup-settings">Backup &amp; restore</button><p class="v3-small">Your data stays in this browser until you export it.</p></section><section class="v3-surface"><h2>People &amp; display</h2><p class="text-muted">Household names, person colours, screensaver photos and Spotify.</p><button id="advanced-settings">Open household settings</button></section><section class="v3-surface"><h2>Connections</h2><p class="text-muted">ChatGPT actions, Vinted notifications and shared sync are planned. No accounts are connected.</p></section></div>';
     const drawAppearance=()=>{
       const s=HD_SETTINGS.getSettings(),el=host.querySelector('#appearance');
-      el.innerHTML=`<h2>Appearance</h2><p class="text-muted">The same layout, a different feeling.</p><div class="v3-theme-grid">${Object.entries(HD_SETTINGS.THEMES).map(([id,t])=>`<button data-v3-theme="${id}" class="${s.theme===id?'selected':''}" aria-pressed="${s.theme===id}"><span class="v3-theme-preview" style="--preview-bg:${t.light['--bg']};--preview-accent:${t.swatch}"></span>${t.name}</button>`).join('')}</div><label>Colour mode<select id="v3-mode">${['light','dark','system'].map(mode=>`<option value="${mode}" ${(s.mode||'system')===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label><label>Text size<select id="v3-text-size"><option value="standard">Standard</option><option value="large" ${s.textSize==='large'?'selected':''}>Large</option></select></label>`;
+      el.innerHTML=`<h2>Appearance</h2><p class="text-muted">The same layout, a different feeling.</p><div class="v3-theme-grid">${Object.entries(HD_SETTINGS.THEMES).map(([id,t])=>`<button data-v3-theme="${id}" class="${s.theme===id?'selected':''}" aria-pressed="${s.theme===id}"><span class="v3-theme-preview" style="--preview-bg:${(s.mode==='light'?t.light:t.dark)['--bg']};--preview-accent:${t.swatch}"></span>${t.name}</button>`).join('')}</div><label>Colour mode<select id="v3-mode">${['light','dark','system'].map(mode=>`<option value="${mode}" ${(s.mode||'system')===mode?'selected':''}>${mode[0].toUpperCase()+mode.slice(1)}</option>`).join('')}</select></label><label>Text size<select id="v3-text-size"><option value="standard">Standard</option><option value="large" ${s.textSize==='large'?'selected':''}>Large</option></select></label>`;
       el.querySelectorAll('[data-v3-theme]').forEach(b=>b.onclick=()=>{HD_SETTINGS.saveSettings({theme:b.dataset.v3Theme,accentColor:null});HD_SETTINGS.applyAppearance();drawAppearance();});
       el.querySelector('#v3-mode').onchange=e=>{HD_SETTINGS.saveSettings({mode:e.target.value});HD_SETTINGS.applyAppearance();};
       el.querySelector('#v3-text-size').onchange=e=>{HD_SETTINGS.saveSettings({textSize:e.target.value});HD_SETTINGS.applyAppearance();};
     };drawAppearance();
-    host.querySelector('#settings-layout').onclick=editLayout;
+    host.querySelector('#settings-layout').onclick=HD_HUB.editLayout;
     host.querySelector('#backup-settings').onclick=()=>HD_BACKUP.openBackupModal();
     host.querySelector('#advanced-settings').onclick=()=>HD_SETTINGS.openSettingsModal();
   }
   function header(){
     const el=document.getElementById('v3-header'),date=new Date();
     if(!['Everyone',...HD_SETTINGS.getUserNames()].includes(person))person='Everyone';
-    el.innerHTML=`<div class="v3-header-main"><a class="v3-brand" href="#dashboard" aria-label="Home dashboard">${icon('home')}<span>home.</span></a><div class="v3-header-date">${date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div><div class="v3-header-actions"><button class="icon-button" id="header-search" aria-label="Search everything">${icon('search')}</button><button id="edit-layout">Edit layout</button><button class="primary" id="quick-add">${icon('plus')}<span>Add</span></button></div></div><div id="v3-context-bar"><div class="v3-context-title"><h1 id="workspace-title">Today</h1><p id="workspace-caption">A shared view of your day.</p></div><div class="v3-person-filter" aria-label="Household filter">${['Everyone',...HD_SETTINGS.getUserNames()].map(name=>`<button data-person="${esc(name)}" class="${name===person?'active':''}" aria-pressed="${name===person}">${name==='Everyone'?icon('people'):`<span aria-hidden="true" class="v3-avatar" style="--person-color:${HD_SETTINGS.getPersonColor(name)||'#64766b'}">${esc(name.slice(0,1))}</span>`}<span>${esc(name)}</span></button>`).join('')}</div></div>`;
-    el.querySelector('#quick-add').onclick=addMenu;el.querySelector('#edit-layout').onclick=editLayout;el.querySelector('#header-search').onclick=()=>HD_SEARCH.openSearchModal();
+    el.innerHTML=`<div class="v3-header-main"><a class="v3-brand" href="#dashboard" aria-label="Home dashboard">${icon('home')}<span>Home</span></a><div class="v3-header-date">${date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div><div class="v3-header-actions"><button class="icon-button" id="header-search" aria-label="Search everything">${icon('search')}</button><button id="edit-layout">Edit layout</button><button class="primary" id="quick-add">${icon('plus')}<span>Add</span></button></div></div><div id="v3-context-bar"><div class="v3-context-title"><h1 id="workspace-title">Today</h1><p id="workspace-caption">A shared view of your day.</p></div><div class="v3-person-filter" aria-label="Household filter">${['Everyone',...HD_SETTINGS.getUserNames()].map(name=>`<button data-person="${esc(name)}" class="${name===person?'active':''}" aria-pressed="${name===person}">${name==='Everyone'?icon('people'):`<span aria-hidden="true" class="v3-avatar" style="--person-color:${HD_SETTINGS.getPersonColor(name)||'#64766b'}">${esc(name.slice(0,1))}</span>`}<span>${esc(name)}</span></button>`).join('')}</div></div>`;
+    el.querySelector('#quick-add').onclick=addMenu;el.querySelector('#edit-layout').onclick=()=>activeRoute==='dashboard'?HD_HUB.editLayout():editLayout;el.querySelector('#header-search').onclick=()=>HD_SEARCH.openSearchModal();
     el.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{person=b.dataset.person;header();refresh();});
   }
   async function renderRoute(){
@@ -91,16 +91,21 @@
     const route=location.hash.slice(1)||'dashboard', root=route.split('/')[0],navigationChanged=route!==lastRoute;
     lastRoute=route;
     closeDialog();
+    HD_HUB.stop();
     if(activeRoute==='garden')HD_GARDEN.cleanupPhotoUrls();
     if(['recipes','meals'].includes(activeRoute))HD_RECIPES.cleanupPhotoUrls();
     HD_STATS.closeStatsPanel();activeRoute=root;
     const host=main();host.className='v3-main';host.dataset.route=root;
-    document.querySelectorAll('#nav a').forEach(a=>{const id=a.dataset.route;const selected=id===root||(id==='kitchen'&&['shopping','recipes','meals'].includes(root))||(id==='more'&&!['dashboard','calendar','tasks','kitchen','shopping','recipes','meals'].includes(root));a.classList.toggle('active',selected);if(selected)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-    document.getElementById('v3-context-bar').hidden=!['dashboard','tasks'].includes(root);
-    document.getElementById('workspace-title').textContent=root==='tasks'?'Tasks':'Today';
-    document.getElementById('workspace-caption').textContent=root==='tasks'?'A little progress, together.':'A shared view of your day.';
-    document.getElementById('edit-layout').hidden=root!=='dashboard';
-    if(root==='dashboard')await HD_TODAY.render(host);
+    document.querySelectorAll('#nav a').forEach(a=>{const id=a.dataset.route;const selected=id===root||(id==='dashboard'&&root==='today')||(id==='week'&&['calendar','trips'].includes(root))||(id==='kitchen'&&['shopping','recipes','meals'].includes(root))||(id==='more'&&!['dashboard','today','week','calendar','trips','tasks','kitchen','shopping','recipes','meals'].includes(root));a.classList.toggle('active',selected);if(selected)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+    document.getElementById('v3-context-bar').hidden=!['today','tasks','week'].includes(root);
+    document.getElementById('workspace-title').textContent=root==='tasks'?'Tasks':root==='week'?'Week':'Today';
+    document.getElementById('workspace-caption').textContent=root==='tasks'?'Shared tasks and routines.':root==='week'?'':'A shared view of your day.';
+    document.getElementById('edit-layout').hidden=!['dashboard','today'].includes(root);
+    if(root==='dashboard')await HD_HUB.render(host);
+    else if(root==='today')await HD_TODAY.render(host);
+    else if(root==='week')await HD_WEEK.render(host);
+    else if(root==='sales')await HD_SALES.render(host);
+    else if(root==='trips')await HD_HUB.renderTrips(host);
     else if(root==='tasks'&&route!=='tasks/plans')await HD_TODAY.render(host,{full:true,type:route.split('/')[1]||'all'});
     else if(route==='tasks/plans'){
       host.innerHTML='<div class="v3-page-heading"><h1>Recurring plans</h1><a href="#tasks">Back to tasks</a></div><section class="v3-surface" id="plans-content"></section>';HD_SCHEDULING.renderPlansContent(host.querySelector('#plans-content'));
@@ -182,10 +187,10 @@
   window.HD_APP={updateSpotifyEmbed:()=>{if(activeRoute==='music')refresh();}};
   window.addEventListener('hashchange',refresh);
   window.addEventListener('DOMContentLoaded',()=>{
-    document.body.classList.add('v3');
+    document.body.classList.add('v3','v35');
     const headerEl=document.createElement('header');headerEl.id='v3-header';document.getElementById('app').prepend(headerEl);
     HD_SETTINGS.applyAppearance();header();
-    document.getElementById('nav').innerHTML=HD_WORKSPACE.features.filter(f=>f.primary).map(f=>`<a href="#${f.id}" data-route="${f.id}">${icon(f.id==='dashboard'?'home':f.id)}<span>${f.title}</span></a>`).join('');
+    document.getElementById('nav').innerHTML=HD_WORKSPACE.features.filter(f=>f.primary).map(f=>`<a href="#${f.id}" data-route="${f.id}">${icon(f.id==='dashboard'?'home':f.id==='week'?'calendar':f.id)}<span>${f.title}</span></a>`).join('');
     setupDialogs();refresh();HD_SCREENSAVER.initScreensaver();
     lastProfile=HD_WORKSPACE.profile();let resizeTimer;
     window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const next=HD_WORKSPACE.profile();if(next!==lastProfile){lastProfile=next;if(activeRoute==='dashboard')refresh();}},250);});
